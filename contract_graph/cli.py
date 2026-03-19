@@ -51,7 +51,7 @@ def _run_analysis(config: ContractGraphConfig, root: str) -> tuple[ContractGraph
 
 
 @click.group()
-@click.version_option(package_name="contract-graph")
+@click.version_option(version="0.1.0", prog_name="contract-graph")
 def main() -> None:
     """contract-graph — Cross-boundary contract intelligence."""
 
