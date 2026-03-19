@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import ast
+import logging
 import re
 from dataclasses import dataclass
 from pathlib import Path
 
 from contract_graph.graph.model import FieldInfo
+
+logger = logging.getLogger(__name__)
 
 # ── Data Structures ────────────────────────────────────────────────
 
@@ -85,6 +88,24 @@ def _is_optional(annotation_str: str) -> bool:
     return "optional[" in lowered or re.search(r"\bnone\b", lowered) is not None
 
 
+def _unwrap_annotated(type_str: str) -> str:
+    """Extract base type T from Annotated[T, ...]. Returns type_str unchanged if not Annotated."""
+    m = re.match(r"Annotated\[(.+)\]", type_str)
+    if not m:
+        return type_str
+    inner = m.group(1)
+    # Split at the first top-level comma to get just T
+    depth = 0
+    for i, ch in enumerate(inner):
+        if ch in ("[", "("):
+            depth += 1
+        elif ch in ("]", ")"):
+            depth -= 1
+        elif ch == "," and depth == 0:
+            return inner[:i].strip()
+    return inner.strip()
+
+
 class _PydanticVisitor(ast.NodeVisitor):
     """Discovers Pydantic BaseModel subclasses and extracts field schemas."""
 
@@ -110,6 +131,7 @@ class _PydanticVisitor(ast.NodeVisitor):
                 if fname.startswith("_"):
                     continue
                 type_str = _resolve_annotation(stmt.annotation) if stmt.annotation else "Any"
+                type_str = _unwrap_annotated(type_str)
                 has_default = stmt.value is not None
                 optional = _is_optional(type_str)
                 fields[fname] = FieldInfo(
@@ -118,6 +140,32 @@ class _PydanticVisitor(ast.NodeVisitor):
                     is_optional=optional,
                     has_default=has_default,
                 )
+
+            # Handle @computed_field decorated properties
+            if isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                for dec in stmt.decorator_list:
+                    dec_name = ""
+                    if isinstance(dec, ast.Name):
+                        dec_name = dec.id
+                    elif isinstance(dec, ast.Attribute):
+                        dec_name = dec.attr
+                    elif isinstance(dec, ast.Call):
+                        if isinstance(dec.func, ast.Name):
+                            dec_name = dec.func.id
+                        elif isinstance(dec.func, ast.Attribute):
+                            dec_name = dec.func.attr
+                    if dec_name == "computed_field" and stmt.returns:
+                        fname = stmt.name
+                        if not fname.startswith("_"):
+                            type_str = _resolve_annotation(stmt.returns)
+                            type_str = _unwrap_annotated(type_str)
+                            fields[fname] = FieldInfo(
+                                name=fname,
+                                type_str=type_str,
+                                is_optional=_is_optional(type_str),
+                                has_default=True,
+                            )
+                        break
 
         self.models.append(
             PydanticModelInfo(
@@ -242,12 +290,14 @@ def parse_python_file(
     """
     try:
         source = file_path.read_text(encoding="utf-8")
-    except (UnicodeDecodeError, OSError):
-        return {"models": [], "routes": [], "config_reads": []}
+    except (UnicodeDecodeError, OSError) as exc:
+        logger.warning("Skipping %s: %s", file_path, exc)
+        return {"models": [], "routes": [], "config_reads": [], "skipped": str(file_path)}
     try:
         tree = ast.parse(source, filename=str(file_path))
-    except SyntaxError:
-        return {"models": [], "routes": [], "config_reads": []}
+    except SyntaxError as exc:
+        logger.warning("Skipping %s: SyntaxError at line %s", file_path, exc.lineno)
+        return {"models": [], "routes": [], "config_reads": [], "skipped": str(file_path)}
 
     result: dict[str, list] = {"models": [], "routes": [], "config_reads": []}
     bases = custom_bases if custom_bases else _PYDANTIC_BASES

@@ -38,14 +38,17 @@ class PolicyEngine:
     def evaluate(self, graph: ContractGraph) -> list[Finding]:
         """Run all enabled policy rules and return findings.
 
-        If policy rules are configured, only rule-generated findings are returned
-        (not graph.findings()) to avoid duplicates, since rules iterate over the
-        same edge mismatches that graph.findings() would report.
+        If no policies are configured, all registered rules are auto-enabled
+        as a sensible default.
         """
         all_findings: list[Finding] = []
 
-        has_rules = False
-        for policy in self.policies:
+        policies = self.policies
+        if not policies:
+            # Auto-enable all registered rules when no explicit policy config
+            policies = [{"name": name, "enabled": True} for name in _RULES]
+
+        for policy in policies:
             name = policy.get("name", "")
             enabled = policy.get("enabled", True)
             if not enabled:
@@ -55,7 +58,6 @@ class PolicyEngine:
             if rule is None:
                 continue
 
-            has_rules = True
             rule_findings = rule(graph, self.config)
 
             # Override severity from policy config
@@ -69,10 +71,6 @@ class PolicyEngine:
                     pass
 
             all_findings.extend(rule_findings)
-
-        # Fallback: if no rules configured, use graph-level findings
-        if not has_rules:
-            all_findings.extend(graph.findings())
 
         return all_findings
 

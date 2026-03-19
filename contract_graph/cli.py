@@ -14,7 +14,7 @@ import yaml
 # discoverers and policy rules via the @DiscovererRegistry.register / @register_rule decorators.
 import contract_graph.discovery  # noqa: F401
 import contract_graph.policy  # noqa: F401
-from contract_graph.config import ContractGraphConfig, generate_default_config, load_config
+from contract_graph.config import ConfigError, ContractGraphConfig, generate_default_config, load_config
 from contract_graph.discovery.base import DiscovererRegistry
 from contract_graph.graph.builder import GraphBuilder
 from contract_graph.graph.impact import analyze_impact
@@ -68,7 +68,11 @@ def main() -> None:
 @click.option("--root", default=".", help="Project root directory")
 def analyze(config_path: str | None, fmt: str, output_path: str | None, root: str) -> None:
     """Run full contract analysis."""
-    config = load_config(config_path)
+    try:
+        config = load_config(config_path)
+    except ConfigError as exc:
+        click.echo(f"\u274c Config error: {exc}", err=True)
+        sys.exit(2)
     graph, duration = _run_analysis(config, root)
 
     # Evaluate policies
@@ -102,7 +106,11 @@ def analyze(config_path: str | None, fmt: str, output_path: str | None, root: st
 @click.option("--root", default=".", help="Project root directory")
 def check(config_path: str | None, fail_on: str, root: str) -> None:
     """CI gate check — exit 1 if findings exceed threshold."""
-    config = load_config(config_path)
+    try:
+        config = load_config(config_path)
+    except ConfigError as exc:
+        click.echo(f"\u274c Config error: {exc}", err=True)
+        sys.exit(2)
     graph, _ = _run_analysis(config, root)
 
     engine = PolicyEngine(config.model_dump())
@@ -128,7 +136,11 @@ def check(config_path: str | None, fail_on: str, root: str) -> None:
 @click.option("--root", default=".", help="Project root directory")
 def impact(file_path: str, config_path: str | None, depth: int, root: str) -> None:
     """Analyze change impact for a file."""
-    config = load_config(config_path)
+    try:
+        config = load_config(config_path)
+    except ConfigError as exc:
+        click.echo(f"\u274c Config error: {exc}", err=True)
+        sys.exit(2)
     graph, _ = _run_analysis(config, root)
 
     result = analyze_impact(graph, file_path, depth)

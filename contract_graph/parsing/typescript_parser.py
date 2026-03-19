@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 import re
 from dataclasses import dataclass
 from pathlib import Path
 
 from contract_graph.graph.model import FieldInfo
+
+logger = logging.getLogger(__name__)
 
 # ── Data Structures ────────────────────────────────────────────────
 
@@ -37,17 +40,18 @@ class TSApiCallInfo:
 
 # ── Regex Patterns ─────────────────────────────────────────────────
 
-# Matches: export interface Foo { ... } or interface Foo extends Bar { ... }
+# Matches: export interface Foo { ... } or interface Foo<T> extends Bar { ... }
 _INTERFACE_PATTERN = re.compile(
     r"(?:export\s+)?interface\s+(\w+)"  # interface name
-    r"(?:\s+extends\s+([\w\s,]+?))?"  # optional extends
+    r"(?:\s*<[^>]*>)?"  # optional generic type params, e.g. <T, U>
+    r"(?:\s+extends\s+([\w\s,<>]+?))?"
     r"\s*\{",  # opening brace
     re.MULTILINE,
 )
 
-# Matches: export type Foo = { ... }
+# Matches: export type Foo = { ... } or export type Foo<T> = { ... }
 _TYPE_PATTERN = re.compile(
-    r"(?:export\s+)?type\s+(\w+)\s*=\s*\{",
+    r"(?:export\s+)?type\s+(\w+)(?:\s*<[^>]*>)?\s*=\s*\{",
     re.MULTILINE,
 )
 
@@ -114,7 +118,8 @@ def parse_ts_interfaces(file_path: Path) -> list[TSInterfaceInfo]:
     """Parse TypeScript file for interface and type definitions."""
     try:
         source = file_path.read_text(encoding="utf-8")
-    except (UnicodeDecodeError, OSError):
+    except (UnicodeDecodeError, OSError) as exc:
+        logger.warning("Skipping %s: %s", file_path, exc)
         return []
     results: list[TSInterfaceInfo] = []
 

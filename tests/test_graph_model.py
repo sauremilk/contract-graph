@@ -54,7 +54,7 @@ class TestContractNode:
             file_path=f,
         )
         h = node.compute_file_hash()
-        assert len(h) == 16  # SHA-256 hex[:16]
+        assert len(h) == 32  # SHA-256 hex[:32]
 
 
 class TestContractGraph:

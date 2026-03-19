@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import logging
 import re
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
 from contract_graph.discovery.base import BaseDiscoverer, DiscovererRegistry
+
+logger = logging.getLogger(__name__)
 from contract_graph.graph.model import (
     ContractEdge,
     ContractGraph,
@@ -276,20 +279,28 @@ class ApiTypeSyncDiscoverer(BaseDiscoverer):
 
         # ── Scan Providers (Python) ──
         py_models: list[PydanticModelInfo] = []
+        provider_file_count = 0
         for pcfg in providers_cfg:
             pattern = pcfg.get("path", pcfg) if isinstance(pcfg, dict) else pcfg
             bases = frozenset(pcfg.get("base_classes", custom_bases)) if isinstance(pcfg, dict) else custom_bases
             for py_file in root_path.glob(pattern):
                 if py_file.is_file():
+                    provider_file_count += 1
                     py_models.extend(parse_pydantic_models(py_file, bases))
+        if providers_cfg and provider_file_count == 0:
+            logger.warning("Provider paths matched 0 files — check your provider glob patterns")
 
         # ── Scan Consumers (TypeScript) ──
         ts_interfaces: list[TSInterfaceInfo] = []
+        consumer_file_count = 0
         for ccfg in consumers_cfg:
             pattern = ccfg.get("path", ccfg) if isinstance(ccfg, dict) else ccfg
             for ts_file in root_path.glob(pattern):
                 if ts_file.is_file():
+                    consumer_file_count += 1
                     ts_interfaces.extend(parse_ts_interfaces(ts_file))
+        if consumers_cfg and consumer_file_count == 0:
+            logger.warning("Consumer paths matched 0 files — check your consumer glob patterns")
 
         # ── Create Nodes ──
         py_node_map: dict[str, list[ContractNode]] = defaultdict(list)

@@ -9,6 +9,10 @@ import yaml
 from pydantic import BaseModel, Field
 
 
+class ConfigError(Exception):
+    """Raised when a config file is explicitly provided but cannot be loaded."""
+
+
 class FieldNamingConfig(BaseModel):
     provider: str = "snake_case"
     consumer: str = "camelCase"
@@ -93,7 +97,12 @@ class ContractGraphConfig(BaseModel):
 
 
 def load_config(config_path: Path | str | None = None) -> ContractGraphConfig:
-    """Load config from YAML file. Falls back to defaults if file doesn't exist."""
+    """Load config from YAML file. Falls back to defaults if no file found.
+
+    Raises ConfigError if an explicitly provided config file is corrupt or unreadable.
+    """
+    explicitly_provided = config_path is not None
+
     if config_path is None:
         # Try common names
         for name in (
@@ -111,13 +120,19 @@ def load_config(config_path: Path | str | None = None) -> ContractGraphConfig:
 
     path = Path(config_path)
     if not path.exists():
+        if explicitly_provided:
+            raise ConfigError(f"Config file not found: {path}")
         return ContractGraphConfig()
 
     try:
         raw = yaml.safe_load(path.read_text(encoding="utf-8"))
-    except (yaml.YAMLError, UnicodeDecodeError, OSError):
+    except (yaml.YAMLError, UnicodeDecodeError, OSError) as exc:
+        if explicitly_provided:
+            raise ConfigError(f"Failed to parse {path}: {exc}") from exc
         return ContractGraphConfig()
     if not isinstance(raw, dict):
+        if explicitly_provided:
+            raise ConfigError(f"Config file {path} does not contain a YAML mapping")
         return ContractGraphConfig()
 
     return ContractGraphConfig.model_validate(raw)

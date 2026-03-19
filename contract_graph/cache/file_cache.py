@@ -43,13 +43,19 @@ class FileCache:
         """Store a result in the cache (atomic write via temp file)."""
         fhash = self._file_hash(file_path)
         cp = self._cache_path(fhash, category)
+        tmp_path: Path | None = None
         try:
             fd, tmp = tempfile.mkstemp(dir=str(self._dir), suffix=".tmp")
+            tmp_path = Path(tmp)
             with open(fd, "w", encoding="utf-8") as f:
                 json.dump(data, f, default=str)
-            Path(tmp).replace(cp)
+            tmp_path.replace(cp)
+            tmp_path = None  # replaced successfully, no cleanup needed
         except OSError:
             pass  # cache write failure is non-fatal
+        finally:
+            if tmp_path is not None:
+                tmp_path.unlink(missing_ok=True)
 
     def clear(self) -> int:
         """Remove all cached files. Returns count of removed files."""
