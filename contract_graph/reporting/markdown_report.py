@@ -43,26 +43,23 @@ def generate_markdown_report(
     for sev in Severity:
         count = severity_counts.get(sev, 0)
         if count > 0:
-            lines.append(f"| {_SEVERITY_EMOJI.get(sev, '')} {sev.value.upper()} | {count} |")
+            lines.append(f"| {SEVERITY_EMOJI.get(sev, '')} {sev.value.upper()} | {count} |")
 
     # Findings detail
     lines.append("\n## Findings\n")
     for i, f in enumerate(findings, 1):
-        emoji = _SEVERITY_EMOJI.get(f.severity, "")
+        emoji = SEVERITY_EMOJI.get(f.severity, "")
         lines.append(f"### {i}. {emoji} {f.title}\n")
         lines.append(f"- **Severity:** {f.severity.value}")
         lines.append(f"- **Discoverer:** {f.discoverer}")
-        location = ""
-        if f.provider_file and f.consumer_file:
-            location = f"{f.provider_file} -> {f.consumer_file}"
-        elif f.provider_file:
-            location = f.provider_file
-        elif f.consumer_file:
-            location = f.consumer_file
-        if location:
-            lines.append(f"- **Location:** `{location}`")
+        if f.provider_file:
+            lines.append(f"- **Provider:** `{f.provider_file}`")
+        if f.consumer_file:
+            lines.append(f"- **Consumer:** `{f.consumer_file}`")
         if f.description:
             lines.append(f"- **Description:** {f.description}")
+        if f.field_name:
+            lines.append(f"- **Field:** `{f.field_name}` (mismatch: {f.mismatch_kind})")
         if f.fix_suggestion:
             lines.append(f"- **Fix:** {f.fix_suggestion}")
         lines.append("")

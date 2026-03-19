@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from contract_graph.graph.model import Finding, Severity
+from contract_graph.reporting import SEVERITY_EMOJI
 from contract_graph.scoring.scorer import ScoreResult
 
 try:
@@ -21,14 +22,6 @@ _SEVERITY_COLORS = {
     Severity.MEDIUM: "yellow",
     Severity.LOW: "blue",
     Severity.INFO: "dim",
-}
-
-_SEVERITY_ICONS = {
-    Severity.CRITICAL: "🔴",
-    Severity.HIGH: "🟠",
-    Severity.MEDIUM: "🟡",
-    Severity.LOW: "🔵",
-    Severity.INFO: "⚪",
 }
 
 
@@ -67,7 +60,7 @@ def print_terminal_report(
     ]:
         count = score.findings_by_severity.get(sev.value, 0)
         if count > 0:
-            icon = _SEVERITY_ICONS[sev]
+            icon = SEVERITY_EMOJI[sev]
             color = _SEVERITY_COLORS[sev]
             summary.add_row(f"{icon} {sev.value.upper()}", f"[{color}]{count}[/{color}]")
     console.print(summary)
@@ -85,7 +78,7 @@ def print_terminal_report(
     table.add_column("Fix", min_width=20)
 
     for f in sorted(findings, key=lambda x: list(Severity).index(x.severity)):
-        icon = _SEVERITY_ICONS.get(f.severity, "")
+        icon = SEVERITY_EMOJI.get(f.severity, "")
         color = _SEVERITY_COLORS.get(f.severity, "")
         location = ""
         if f.provider_file and f.consumer_file:

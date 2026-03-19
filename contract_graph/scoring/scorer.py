@@ -7,7 +7,10 @@ from typing import Any
 
 from contract_graph.graph.model import Finding, Severity
 
-# ── Severity weights for score calculation ─────────────────────────
+# ── Severity weights and baseline counts ────────────────────────────────────────
+
+# Empty per-severity count dict — single source of truth for the zero baseline.
+_EMPTY_SEVERITY_COUNTS: dict[str, int] = {s.value: 0 for s in Severity}
 
 _SEVERITY_PENALTY: dict[Severity, float] = {
     Severity.CRITICAL: 1.0,
@@ -56,7 +59,7 @@ def score_findings(
     if not findings:
         return ScoreResult(
             overall_score=1.0,
-            findings_by_severity={s.value: 0 for s in Severity},
+            findings_by_severity=dict(_EMPTY_SEVERITY_COUNTS),
             total_findings=0,
             discoverer_scores={},
             weighted_penalty=0.0,
@@ -65,7 +68,7 @@ def score_findings(
     weights = weights or {}
 
     # Count by severity
-    by_severity: dict[str, int] = {s.value: 0 for s in Severity}
+    by_severity: dict[str, int] = dict(_EMPTY_SEVERITY_COUNTS)
     for f in findings:
         by_severity[f.severity.value] = by_severity.get(f.severity.value, 0) + 1
 

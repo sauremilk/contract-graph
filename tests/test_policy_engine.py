@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-# Ensure rules are registered
-import contract_graph.policy.rules  # noqa: F401
+from conftest import ALL_DEFAULT_POLICIES
+
 from contract_graph.graph.builder import GraphBuilder
 from contract_graph.graph.model import (
     ContractEdge,
@@ -17,12 +17,6 @@ from contract_graph.graph.model import (
     Severity,
 )
 from contract_graph.policy.engine import PolicyEngine
-
-_ALL_RULES_POLICIES = [
-    {"name": "no_missing_consumer_fields", "enabled": True},
-    {"name": "no_type_incompatibility", "enabled": True},
-    {"name": "no_phantom_types", "enabled": True},
-]
 
 
 def _build_graph_with_drift():
@@ -89,14 +83,14 @@ def _build_graph_with_drift():
 class TestPolicyEngine:
     def test_evaluate_finds_issues(self):
         graph = _build_graph_with_drift()
-        engine = PolicyEngine({"policies": _ALL_RULES_POLICIES})
+        engine = PolicyEngine({"policies": ALL_DEFAULT_POLICIES})
         findings = engine.evaluate(graph)
         assert len(findings) > 0
 
     def test_gate_fails_on_high(self):
         graph = _build_graph_with_drift()
-        engine = PolicyEngine({"policies": _ALL_RULES_POLICIES})
-        passed, _findings = engine.evaluate_gate(graph, "high")
+        engine = PolicyEngine({"policies": ALL_DEFAULT_POLICIES})
+        passed, findings = engine.evaluate_gate(graph, "high")
         assert not passed, "Gate should fail — we have HIGH severity edge"
 
     def test_gate_passes_with_low_threshold(self):
@@ -117,21 +111,21 @@ class TestPolicyEngine:
 
     def test_no_missing_consumer_fields_rule(self):
         graph = _build_graph_with_drift()
-        engine = PolicyEngine({"policies": _ALL_RULES_POLICIES})
+        engine = PolicyEngine({"policies": ALL_DEFAULT_POLICIES})
         findings = engine.evaluate(graph)
         missing_findings = [f for f in findings if "missing" in f.title.lower() or "consumer" in f.title.lower()]
         assert len(missing_findings) > 0
 
     def test_no_type_incompatibility_rule(self):
         graph = _build_graph_with_drift()
-        engine = PolicyEngine({"policies": _ALL_RULES_POLICIES})
+        engine = PolicyEngine({"policies": ALL_DEFAULT_POLICIES})
         findings = engine.evaluate(graph)
         type_findings = [f for f in findings if "type" in f.title.lower() or "incompatib" in f.title.lower()]
         assert len(type_findings) > 0
 
     def test_phantom_type_rule(self):
         graph = _build_graph_with_drift()
-        engine = PolicyEngine({"policies": _ALL_RULES_POLICIES})
+        engine = PolicyEngine({"policies": ALL_DEFAULT_POLICIES})
         findings = engine.evaluate(graph)
         phantom_findings = [f for f in findings if "phantom" in f.title.lower()]
         assert len(phantom_findings) > 0

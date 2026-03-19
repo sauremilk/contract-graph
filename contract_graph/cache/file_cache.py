@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 import tempfile
 from pathlib import Path
 from typing import Any
+
+from contract_graph.utils import file_content_hash
 
 
 class FileCache:
@@ -20,11 +21,7 @@ class FileCache:
         self._dir.mkdir(parents=True, exist_ok=True)
 
     def _file_hash(self, file_path: Path) -> str:
-        try:
-            content = file_path.read_bytes()
-        except OSError:
-            return "unreadable"
-        return hashlib.sha256(content).hexdigest()[:16]
+        return file_content_hash(file_path)
 
     def _cache_path(self, file_hash: str, category: str) -> Path:
         return self._dir / f"{file_hash}_{category}.json"

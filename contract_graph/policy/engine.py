@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from contract_graph.graph.model import ContractGraph, Finding
+from contract_graph.graph.model import SEVERITY_ORDER, ContractGraph, Finding, Severity
 
 # Rule function type: (graph, config) -> list of findings
 RuleFunc = Callable[[ContractGraph, dict[str, Any]], list[Finding]]
@@ -44,7 +44,6 @@ class PolicyEngine:
         """
         all_findings: list[Finding] = []
 
-        # Run policy rules
         has_rules = False
         for policy in self.policies:
             name = policy.get("name", "")
@@ -62,8 +61,6 @@ class PolicyEngine:
             # Override severity from policy config
             policy_severity = policy.get("severity")
             if policy_severity:
-                from contract_graph.graph.model import Severity
-
                 try:
                     sev = Severity(policy_severity)
                     for f in rule_findings:
@@ -84,24 +81,15 @@ class PolicyEngine:
 
         Returns (passed, findings). passed=False means findings exceed the threshold.
         """
-        from contract_graph.graph.model import Severity
-
         findings = self.evaluate(graph)
-        severity_order = [
-            Severity.CRITICAL,
-            Severity.HIGH,
-            Severity.MEDIUM,
-            Severity.LOW,
-            Severity.INFO,
-        ]
 
         try:
             threshold = Severity(fail_on)
         except ValueError:
             threshold = Severity.HIGH
 
-        threshold_idx = severity_order.index(threshold)
-        blocking_severities = set(severity_order[: threshold_idx + 1])
+        threshold_idx = SEVERITY_ORDER.index(threshold)
+        blocking_severities = set(SEVERITY_ORDER[: threshold_idx + 1])
 
         blocking = [f for f in findings if f.severity in blocking_severities]
         return len(blocking) == 0, findings

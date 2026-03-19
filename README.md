@@ -2,7 +2,7 @@
 
 > Cross-boundary contract intelligence for fullstack projects.
 
-**contract-graph** statically analyzes your codebase to detect drift between backend models (Pydantic/FastAPI) and frontend types (TypeScript interfaces). It builds a dependency graph of all cross-boundary contracts and surfaces mismatches *before* they hit production.
+**contract-graph** statically analyzes your codebase to detect drift between backend models (Pydantic/FastAPI) and frontend types (TypeScript interfaces). It builds a dependency graph of all cross-boundary contracts and surfaces mismatches _before_ they hit production.
 
 ## Problem
 
@@ -66,6 +66,7 @@ contract-graph analyze
 ```
 
 Output:
+
 ```
 ╭─ Contract Graph Report ─────────────────────────────────╮
 │ Health Score: 72/100 (C)  │  Nodes: 14  │  Edges: 8     │
@@ -93,12 +94,12 @@ contract-graph impact backend/models.py
 
 ## Commands
 
-| Command | Purpose |
-|---------|---------|
-| `analyze` | Full contract analysis with terminal/JSON output |
-| `check` | CI gate — exit 1 if findings exceed severity threshold |
-| `impact <file>` | Show change impact for a specific file |
-| `init` | Generate `contract-graph.yaml` config template |
+| Command         | Purpose                                                |
+| --------------- | ------------------------------------------------------ |
+| `analyze`       | Full contract analysis with terminal/JSON output       |
+| `check`         | CI gate — exit 1 if findings exceed severity threshold |
+| `impact <file>` | Show change impact for a specific file                 |
+| `init`          | Generate `contract-graph.yaml` config template         |
 
 ## How It Works
 
@@ -110,8 +111,8 @@ contract-graph impact backend/models.py
 
 ## Discoverers
 
-| Discoverer | What it detects |
-|------------|----------------|
+| Discoverer      | What it detects                                         |
+| --------------- | ------------------------------------------------------- |
 | `api_type_sync` | Drift between Pydantic models and TypeScript interfaces |
 
 More discoverers (config_usage, route_activation, schema_evolution) planned.
@@ -124,21 +125,80 @@ See `contract-graph init --preset fullstack` for a full example. Key options:
 discovery:
   api_type_sync:
     enabled: true
-    provider_paths: [backend/]        # Where Pydantic models live
-    consumer_paths: [frontend/src/]   # Where TypeScript types live
-    naming_convention: auto           # auto | snake_to_camel | camel_to_snake
-    custom_model_mapping:             # Manual overrides
+    provider_paths: [backend/] # Where Pydantic models live
+    consumer_paths: [frontend/src/] # Where TypeScript types live
+    naming_convention: auto # auto | snake_to_camel | camel_to_snake
+    custom_model_mapping: # Manual overrides
       BackendName: FrontendName
     custom_type_mapping:
-      datetime: string                # Custom type equivalences
+      datetime: string # Custom type equivalences
 
 policy:
-  fail_on: high                       # CI gate threshold
+  fail_on: high # CI gate threshold
 
 scoring:
   weights:
     api_type_sync: 1.0
 ```
+
+## What contract-graph catches that nothing else does
+
+`mypy`, `tsc`, and `eslint` each check one side of the stack in isolation. None of them can detect drift _between_ backend and frontend. Here's a concrete example:
+
+```python
+# backend/models.py
+class UserProfile(BaseModel):
+    user_id: UUID
+    email: str
+    premium_tier: bool        # ← changed from str to bool last sprint
+    bio: Optional[str]        # ← nullable
+    discount_code: str        # ← new field
+```
+
+```typescript
+// frontend/types.ts — stale, nobody updated it
+interface UserProfile {
+  userId: string;
+  email: string;
+  premiumTier: string; // ← BUG: still string, backend is bool
+  bio: string; // ← BUG: required, backend is Optional
+  // discountCode missing  // ← BUG: field doesn't exist here
+}
+```
+
+Now run the tools:
+
+```bash
+mypy backend/           # ✅ all good
+tsc --noEmit            # ✅ all good
+contract-graph check    # ❌ EXIT 1 — 3 findings
+```
+
+| Bug type                                  | `mypy`  | `tsc`   | `contract-graph` |
+| ----------------------------------------- | ------- | ------- | ---------------- |
+| Type mismatch (`bool` → `string`)         | ✅ pass | ✅ pass | ❌ **caught**    |
+| Missing field (`discount_code`)           | ✅ pass | ✅ pass | ❌ **caught**    |
+| Optionality drift (`Optional` → required) | ✅ pass | ✅ pass | ❌ **caught**    |
+| Phantom type (no backend model)           | ✅ pass | ✅ pass | ❌ **caught**    |
+
+All four drift categories are covered by the test suite in `tests/test_regression_demo.py` with a controlled fixture (`tests/fixtures/regression_demo/`). The same fixture includes `NotificationSettings` — a perfectly synced model — to prove zero false positives on clean contracts.
+
+### Detected drift types
+
+| Drift type                | Severity | Example                                                       |
+| ------------------------- | -------- | ------------------------------------------------------------- |
+| Missing field in consumer | MEDIUM   | Backend adds `discount_code`, frontend never updated          |
+| Type incompatibility      | HIGH     | Backend changes `str` → `bool`, frontend still says `string`  |
+| Phantom type              | MEDIUM   | Frontend has `PaymentMethod`, no backend model exists         |
+| Optionality mismatch      | MEDIUM   | Backend says `Optional[str]`, frontend says required `string` |
+| Extra field in consumer   | LOW      | Frontend has `favoriteWeapon`, backend doesn't know about it  |
+
+### Scope & limitations
+
+- **Currently detects:** Pydantic model ↔ TypeScript interface drift (field presence, type compatibility, optionality)
+- **Not yet detected:** OpenAPI spec drift, enum value drift, nested object depth differences
+- **Naming:** `auto` mode handles `snake_case` ↔ `camelCase` conversion; unconventional names need `custom_model_mapping`
+- **False positives:** The control test (`NotificationSettings`) confirms zero false positives on synced models. Use `custom_type_mapping` for project-specific type equivalences.
 
 ## License
 

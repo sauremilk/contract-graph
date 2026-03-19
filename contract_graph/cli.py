@@ -10,14 +10,11 @@ from pathlib import Path
 import click
 import yaml
 
-# Ensure built-in discoverers and rules are registered
-import contract_graph.discovery.api_type_sync
-import contract_graph.policy.rules  # noqa: F401
-from contract_graph.config import (
-    ContractGraphConfig,
-    generate_default_config,
-    load_config,
-)
+# Importing these packages triggers their __init__, which auto-registers built-in
+# discoverers and policy rules via the @DiscovererRegistry.register / @register_rule decorators.
+import contract_graph.discovery  # noqa: F401
+import contract_graph.policy  # noqa: F401
+from contract_graph.config import ContractGraphConfig, generate_default_config, load_config
 from contract_graph.discovery.base import DiscovererRegistry
 from contract_graph.graph.builder import GraphBuilder
 from contract_graph.graph.impact import analyze_impact

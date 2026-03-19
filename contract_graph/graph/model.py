@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-import hashlib
 from dataclasses import dataclass, field
 from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
 import networkx as nx
+
+from contract_graph.utils import file_content_hash
 
 # ── Node & Edge Kinds ──────────────────────────────────────────────
 
@@ -40,6 +41,16 @@ class Severity(StrEnum):
     MEDIUM = "medium"
     LOW = "low"
     INFO = "info"
+
+
+# Canonical severity ordering — most severe first.
+SEVERITY_ORDER: tuple[Severity, ...] = (
+    Severity.CRITICAL,
+    Severity.HIGH,
+    Severity.MEDIUM,
+    Severity.LOW,
+    Severity.INFO,
+)
 
 
 class MismatchKind(StrEnum):
@@ -94,8 +105,7 @@ class ContractNode:
     def compute_file_hash(self) -> str:
         """Compute SHA-256 hash of the source file for cache invalidation."""
         if self.file_path.exists():
-            content = self.file_path.read_bytes()
-            self.file_hash = hashlib.sha256(content).hexdigest()[:16]
+            self.file_hash = file_content_hash(self.file_path)
         return self.file_hash
 
 
@@ -141,6 +151,19 @@ class Finding:
         return {k: str(v) if isinstance(v, Severity) else v for k, v in self.__dict__.items()}
 
 
+def _node_ref(node: ContractNode | None, fallback_id: str = "", *, prefix: str) -> dict[str, object]:
+    """Return Finding kwargs for a provider or consumer node.
+
+    prefix must be "provider" or "consumer". The returned dict is intended
+    to be unpacked via ** into a Finding constructor call.
+    """
+    return {
+        f"{prefix}_file": str(node.file_path) if node else "",
+        f"{prefix}_name": node.name if node else fallback_id,
+        f"{prefix}_line": node.line_start if node else 0,
+    }
+
+
 # ── Contract Graph ─────────────────────────────────────────────────
 
 
@@ -169,45 +192,45 @@ class ContractGraph:
     def get_edges_to(self, node_id: str) -> list[ContractEdge]:
         return [e for e in self.edges if e.target == node_id]
 
+    def edges_by_kind(self, kind: EdgeKind) -> list[ContractEdge]:
+        """Return all edges of a specific kind."""
+        return [e for e in self.edges if e.kind == kind]
+
+    def _bfs(self, node_id: str, depth: int, neighbors_fn) -> set[str]:
+        """Bounded BFS traversal. neighbors_fn(n) yields neighbors of n.
+
+        Used by downstream() and upstream() for depth-limited traversal.
+        Returns visited nodes (excluding the source node itself).
+        """
+        visited: set[str] = set()
+        frontier = {node_id}
+        for _ in range(depth):
+            next_frontier: set[str] = set()
+            for n in frontier:
+                for neighbor in neighbors_fn(n):
+                    if neighbor not in visited:
+                        visited.add(neighbor)
+                        next_frontier.add(neighbor)
+            frontier = next_frontier
+            if not frontier:
+                break
+        return visited
+
     def downstream(self, node_id: str, depth: int = -1) -> set[str]:
         """BFS downstream from a node. depth=-1 means unlimited."""
         if node_id not in self._nx:
             return set()
         if depth == -1:
             return set(nx.descendants(self._nx, node_id))
-        visited: set[str] = set()
-        frontier = {node_id}
-        for _ in range(depth):
-            next_frontier: set[str] = set()
-            for n in frontier:
-                for succ in self._nx.successors(n):
-                    if succ not in visited:
-                        visited.add(succ)
-                        next_frontier.add(succ)
-            frontier = next_frontier
-            if not frontier:
-                break
-        return visited
+        return self._bfs(node_id, depth, self._nx.successors)
 
     def upstream(self, node_id: str, depth: int = -1) -> set[str]:
-        """BFS upstream from a node."""
+        """BFS upstream from a node. depth=-1 means unlimited."""
         if node_id not in self._nx:
             return set()
         if depth == -1:
             return set(nx.ancestors(self._nx, node_id))
-        visited: set[str] = set()
-        frontier = {node_id}
-        for _ in range(depth):
-            next_frontier: set[str] = set()
-            for n in frontier:
-                for pred in self._nx.predecessors(n):
-                    if pred not in visited:
-                        visited.add(pred)
-                        next_frontier.add(pred)
-            frontier = next_frontier
-            if not frontier:
-                break
-        return visited
+        return self._bfs(node_id, depth, self._nx.predecessors)
 
     @property
     def node_count(self) -> int:
@@ -230,12 +253,8 @@ class ContractGraph:
                         severity=edge.severity,
                         title=f"{mm.mismatch_kind.value}: {mm.field_name}",
                         description=(f"Provider type '{mm.provider_type}' vs consumer type '{mm.consumer_type}'"),
-                        provider_file=str(src.file_path) if src else "",
-                        provider_name=src.name if src else edge.source,
-                        provider_line=src.line_start if src else 0,
-                        consumer_file=str(tgt.file_path) if tgt else "",
-                        consumer_name=tgt.name if tgt else edge.target,
-                        consumer_line=tgt.line_start if tgt else 0,
+                        **_node_ref(src, edge.source, prefix="provider"),
+                        **_node_ref(tgt, edge.target, prefix="consumer"),
                         field_name=mm.field_name,
                         mismatch_kind=mm.mismatch_kind.value,
                     )
