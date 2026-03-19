@@ -80,7 +80,13 @@ class ContractGraphConfig(BaseModel):
 
     version: str = "1.0"
     include: list[str] = Field(default_factory=list)
-    exclude: list[str] = Field(default_factory=lambda: ["**/node_modules/**", "**/__pycache__/**", "**/dist/**"])
+    exclude: list[str] = Field(
+        default_factory=lambda: [
+            "**/node_modules/**",
+            "**/__pycache__/**",
+            "**/dist/**",
+        ]
+    )
     discovery: DiscoveryConfig = Field(default_factory=DiscoveryConfig)
     policies: list[PolicyConfig] = Field(default_factory=list)
     scoring: ScoringConfig = Field(default_factory=ScoringConfig)
@@ -90,7 +96,11 @@ def load_config(config_path: Path | str | None = None) -> ContractGraphConfig:
     """Load config from YAML file. Falls back to defaults if file doesn't exist."""
     if config_path is None:
         # Try common names
-        for name in ("contract-graph.yaml", "contract-graph.yml", ".contract-graph.yaml"):
+        for name in (
+            "contract-graph.yaml",
+            "contract-graph.yml",
+            ".contract-graph.yaml",
+        ):
             p = Path(name)
             if p.exists():
                 config_path = p
@@ -103,7 +113,10 @@ def load_config(config_path: Path | str | None = None) -> ContractGraphConfig:
     if not path.exists():
         return ContractGraphConfig()
 
-    raw = yaml.safe_load(path.read_text(encoding="utf-8"))
+    try:
+        raw = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except (yaml.YAMLError, UnicodeDecodeError, OSError):
+        return ContractGraphConfig()
     if not isinstance(raw, dict):
         return ContractGraphConfig()
 
@@ -115,7 +128,12 @@ def generate_default_config(preset: str = "fullstack") -> dict[str, Any]:
     base: dict[str, Any] = {
         "version": "1.0",
         "include": [],
-        "exclude": ["**/node_modules/**", "**/__pycache__/**", "**/dist/**", "**/build/**"],
+        "exclude": [
+            "**/node_modules/**",
+            "**/__pycache__/**",
+            "**/dist/**",
+            "**/build/**",
+        ],
         "discovery": {
             "api_type_sync": {
                 "enabled": True,
@@ -136,7 +154,11 @@ def generate_default_config(preset: str = "fullstack") -> dict[str, Any]:
             "route_activation": {"enabled": False},
         },
         "policies": [
-            {"name": "no_missing_consumer_fields", "enabled": True, "severity": "medium"},
+            {
+                "name": "no_missing_consumer_fields",
+                "enabled": True,
+                "severity": "medium",
+            },
             {"name": "no_type_incompatibility", "enabled": True, "severity": "high"},
             {"name": "no_phantom_types", "enabled": True, "severity": "medium"},
         ],
@@ -153,9 +175,17 @@ def generate_default_config(preset: str = "fullstack") -> dict[str, Any]:
     }
 
     if preset == "fullstack":
-        base["include"] = ["backend/**/*.py", "dashboard/src/**/*.ts", "dashboard/src/**/*.tsx", "config/**/*.yaml"]
+        base["include"] = [
+            "backend/**/*.py",
+            "dashboard/src/**/*.ts",
+            "dashboard/src/**/*.tsx",
+            "config/**/*.yaml",
+        ]
         base["discovery"]["api_type_sync"]["providers"] = [
-            {"path": "backend/api/models/**/*.py", "base_classes": ["BaseModel", "SQLModel"]}
+            {
+                "path": "backend/api/models/**/*.py",
+                "base_classes": ["BaseModel", "SQLModel"],
+            }
         ]
         base["discovery"]["api_type_sync"]["consumers"] = [
             {"path": "dashboard/src/shared/types/**/*.ts"},
@@ -165,12 +195,12 @@ def generate_default_config(preset: str = "fullstack") -> dict[str, Any]:
         base["include"] = ["backend/**/*.py", "config/**/*.yaml"]
         base["discovery"]["api_type_sync"]["enabled"] = False
     elif preset == "agent-system":
-        base["include"] = [".github/**/*.md", "backend/**/*.py", "dashboard/src/**/*.ts"]
-        base["discovery"]["api_type_sync"]["providers"] = [
-            {"path": "backend/api/models/**/*.py"}
+        base["include"] = [
+            ".github/**/*.md",
+            "backend/**/*.py",
+            "dashboard/src/**/*.ts",
         ]
-        base["discovery"]["api_type_sync"]["consumers"] = [
-            {"path": "dashboard/src/**/*.ts"}
-        ]
+        base["discovery"]["api_type_sync"]["providers"] = [{"path": "backend/api/models/**/*.py"}]
+        base["discovery"]["api_type_sync"]["consumers"] = [{"path": "dashboard/src/**/*.ts"}]
 
     return base

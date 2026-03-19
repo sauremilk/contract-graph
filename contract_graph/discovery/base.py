@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, ClassVar
 
 from contract_graph.graph.model import ContractEdge, ContractGraph, ContractNode
 
@@ -36,7 +36,7 @@ class BaseDiscoverer(ABC):
 class DiscovererRegistry:
     """Registry for discoverer classes."""
 
-    _discoverers: dict[str, type[BaseDiscoverer]] = {}
+    _discoverers: ClassVar[dict[str, type[BaseDiscoverer]]] = {}
 
     @classmethod
     def register(cls, discoverer_cls: type[BaseDiscoverer]) -> type[BaseDiscoverer]:

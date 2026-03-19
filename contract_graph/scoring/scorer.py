@@ -7,7 +7,6 @@ from typing import Any
 
 from contract_graph.graph.model import Finding, Severity
 
-
 # ── Severity weights for score calculation ─────────────────────────
 
 _SEVERITY_PENALTY: dict[Severity, float] = {
@@ -48,7 +47,7 @@ def score_findings(
 
     Args:
         findings: List of findings from policy evaluation.
-        weights: Discoverer name → weight (0.0–1.0). Default: equal weight.
+        weights: Discoverer name -> weight (0.0-1.0). Default: equal weight.
         max_penalty: Maximum total penalty before score reaches 0.
 
     Returns:

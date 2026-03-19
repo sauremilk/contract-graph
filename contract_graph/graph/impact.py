@@ -35,9 +35,7 @@ def analyze_impact(graph: ContractGraph, file_path: str, depth: int = -1) -> Imp
     normalized = Path(file_path).as_posix()
 
     # Find all nodes in this file
-    local_nodes = [
-        nid for nid, node in graph.nodes.items() if Path(node.file_path).as_posix().endswith(normalized)
-    ]
+    local_nodes = [nid for nid, node in graph.nodes.items() if Path(node.file_path).as_posix().endswith(normalized)]
 
     # Collect downstream
     all_downstream: set[str] = set()

@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from contract_graph.graph.model import ContractGraph, Finding
 
@@ -35,13 +36,16 @@ class PolicyEngine:
         self.policies: list[dict[str, Any]] = self.config.get("policies", [])
 
     def evaluate(self, graph: ContractGraph) -> list[Finding]:
-        """Run all enabled policy rules and return findings."""
+        """Run all enabled policy rules and return findings.
+
+        If policy rules are configured, only rule-generated findings are returned
+        (not graph.findings()) to avoid duplicates, since rules iterate over the
+        same edge mismatches that graph.findings() would report.
+        """
         all_findings: list[Finding] = []
 
-        # First: collect findings from graph edges (discoverer-generated)
-        all_findings.extend(graph.findings())
-
-        # Second: run policy rules
+        # Run policy rules
+        has_rules = False
         for policy in self.policies:
             name = policy.get("name", "")
             enabled = policy.get("enabled", True)
@@ -52,6 +56,7 @@ class PolicyEngine:
             if rule is None:
                 continue
 
+            has_rules = True
             rule_findings = rule(graph, self.config)
 
             # Override severity from policy config
@@ -68,6 +73,10 @@ class PolicyEngine:
 
             all_findings.extend(rule_findings)
 
+        # Fallback: if no rules configured, use graph-level findings
+        if not has_rules:
+            all_findings.extend(graph.findings())
+
         return all_findings
 
     def evaluate_gate(self, graph: ContractGraph, fail_on: str = "high") -> tuple[bool, list[Finding]]:
@@ -78,7 +87,13 @@ class PolicyEngine:
         from contract_graph.graph.model import Severity
 
         findings = self.evaluate(graph)
-        severity_order = [Severity.CRITICAL, Severity.HIGH, Severity.MEDIUM, Severity.LOW, Severity.INFO]
+        severity_order = [
+            Severity.CRITICAL,
+            Severity.HIGH,
+            Severity.MEDIUM,
+            Severity.LOW,
+            Severity.INFO,
+        ]
 
         try:
             threshold = Severity(fail_on)

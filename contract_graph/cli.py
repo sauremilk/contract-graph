@@ -10,7 +10,14 @@ from pathlib import Path
 import click
 import yaml
 
-from contract_graph.config import ContractGraphConfig, generate_default_config, load_config
+# Ensure built-in discoverers and rules are registered
+import contract_graph.discovery.api_type_sync
+import contract_graph.policy.rules  # noqa: F401
+from contract_graph.config import (
+    ContractGraphConfig,
+    generate_default_config,
+    load_config,
+)
 from contract_graph.discovery.base import DiscovererRegistry
 from contract_graph.graph.builder import GraphBuilder
 from contract_graph.graph.impact import analyze_impact
@@ -19,10 +26,6 @@ from contract_graph.policy.engine import PolicyEngine
 from contract_graph.reporting.json_report import generate_json_report, write_json_report
 from contract_graph.reporting.terminal_report import print_terminal_report
 from contract_graph.scoring.scorer import score_findings
-
-# Ensure built-in discoverers and rules are registered
-import contract_graph.discovery.api_type_sync  # noqa: F401
-import contract_graph.policy.rules  # noqa: F401
 
 
 def _run_analysis(config: ContractGraphConfig, root: str) -> tuple[ContractGraph, float]:
@@ -58,7 +61,12 @@ def main() -> None:
 
 @main.command()
 @click.option("--config", "config_path", default=None, help="Path to contract-graph.yaml")
-@click.option("--format", "fmt", type=click.Choice(["json", "terminal", "both"]), default="terminal")
+@click.option(
+    "--format",
+    "fmt",
+    type=click.Choice(["json", "terminal", "both"]),
+    default="terminal",
+)
 @click.option("--output", "output_path", default=None, help="Output file path (for JSON)")
 @click.option("--root", default=".", help="Project root directory")
 def analyze(config_path: str | None, fmt: str, output_path: str | None, root: str) -> None:
@@ -89,7 +97,11 @@ def analyze(config_path: str | None, fmt: str, output_path: str | None, root: st
 
 @main.command()
 @click.option("--config", "config_path", default=None, help="Path to contract-graph.yaml")
-@click.option("--fail-on", default="high", type=click.Choice(["critical", "high", "medium", "low"]))
+@click.option(
+    "--fail-on",
+    default="high",
+    type=click.Choice(["critical", "high", "medium", "low"]),
+)
 @click.option("--root", default=".", help="Project root directory")
 def check(config_path: str | None, fail_on: str, root: str) -> None:
     """CI gate check — exit 1 if findings exceed threshold."""
@@ -127,7 +139,11 @@ def impact(file_path: str, config_path: str | None, depth: int, root: str) -> No
 
 
 @main.command()
-@click.option("--preset", type=click.Choice(["fullstack", "backend-only", "agent-system"]), default="fullstack")
+@click.option(
+    "--preset",
+    type=click.Choice(["fullstack", "backend-only", "agent-system"]),
+    default="fullstack",
+)
 @click.option("--output", "output_path", default="contract-graph.yaml")
 def init(preset: str, output_path: str) -> None:
     """Generate a contract-graph.yaml config template."""

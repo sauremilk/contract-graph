@@ -44,21 +44,33 @@ class TestCLI:
         assert "contract-graph" in result.output or "0." in result.output
 
     def test_analyze_terminal(self, runner: CliRunner, config_file: Path, fullstack_basic: Path):
-        result = runner.invoke(main, [
-            "analyze",
-            "--config", str(config_file),
-            "--root", str(fullstack_basic),
-            "--format", "terminal",
-        ])
+        result = runner.invoke(
+            main,
+            [
+                "analyze",
+                "--config",
+                str(config_file),
+                "--root",
+                str(fullstack_basic),
+                "--format",
+                "terminal",
+            ],
+        )
         assert result.exit_code == 0
 
     def test_analyze_json(self, runner: CliRunner, config_file: Path, fullstack_basic: Path):
-        result = runner.invoke(main, [
-            "analyze",
-            "--config", str(config_file),
-            "--root", str(fullstack_basic),
-            "--format", "json",
-        ])
+        result = runner.invoke(
+            main,
+            [
+                "analyze",
+                "--config",
+                str(config_file),
+                "--root",
+                str(fullstack_basic),
+                "--format",
+                "json",
+            ],
+        )
         assert result.exit_code == 0
         # Should be valid JSON
         output = result.output.strip()
@@ -66,39 +78,60 @@ class TestCLI:
         assert "findings" in parsed or "score" in parsed or "graph" in parsed
 
     def test_check_returns_exit_code(self, runner: CliRunner, config_file: Path, fullstack_basic: Path):
-        result = runner.invoke(main, [
-            "check",
-            "--config", str(config_file),
-            "--root", str(fullstack_basic),
-            "--fail-on", "high",
-        ])
+        result = runner.invoke(
+            main,
+            [
+                "check",
+                "--config",
+                str(config_file),
+                "--root",
+                str(fullstack_basic),
+                "--fail-on",
+                "high",
+            ],
+        )
         # Should either pass (0) or fail (1), not crash
         assert result.exit_code in (0, 1)
 
     def test_impact_command(self, runner: CliRunner, config_file: Path, fullstack_basic: Path):
-        result = runner.invoke(main, [
-            "impact",
-            "backend/models.py",
-            "--config", str(config_file),
-            "--root", str(fullstack_basic),
-        ])
+        result = runner.invoke(
+            main,
+            [
+                "impact",
+                "backend/models.py",
+                "--config",
+                str(config_file),
+                "--root",
+                str(fullstack_basic),
+            ],
+        )
         assert result.exit_code == 0
 
     def test_init_command(self, runner: CliRunner, tmp_path: Path):
         output_path = tmp_path / "contract-graph.yaml"
-        result = runner.invoke(main, [
-            "init",
-            "--preset", "fullstack",
-            "--output", str(output_path),
-        ])
+        result = runner.invoke(
+            main,
+            [
+                "init",
+                "--preset",
+                "fullstack",
+                "--output",
+                str(output_path),
+            ],
+        )
         assert result.exit_code == 0
         assert output_path.exists()
 
     def test_init_does_not_overwrite(self, runner: CliRunner, tmp_path: Path):
         output_path = tmp_path / "contract-graph.yaml"
         output_path.write_text("existing")
-        result = runner.invoke(main, [
-            "init",
-            "--output", str(output_path),
-        ], input="n\n")
-        assert result.exit_code != 0 or "existing" == output_path.read_text()
+        result = runner.invoke(
+            main,
+            [
+                "init",
+                "--output",
+                str(output_path),
+            ],
+            input="n\n",
+        )
+        assert result.exit_code != 0 or output_path.read_text() == "existing"

@@ -8,7 +8,6 @@ from pathlib import Path
 
 from contract_graph.graph.model import FieldInfo
 
-
 # ── Data Structures ────────────────────────────────────────────────
 
 
@@ -113,7 +112,10 @@ def _count_newlines(text: str, end: int) -> int:
 
 def parse_ts_interfaces(file_path: Path) -> list[TSInterfaceInfo]:
     """Parse TypeScript file for interface and type definitions."""
-    source = file_path.read_text(encoding="utf-8")
+    try:
+        source = file_path.read_text(encoding="utf-8")
+    except (UnicodeDecodeError, OSError):
+        return []
     results: list[TSInterfaceInfo] = []
 
     # Parse interfaces
@@ -170,7 +172,10 @@ def parse_ts_interfaces(file_path: Path) -> list[TSInterfaceInfo]:
 
 def parse_ts_api_calls(file_path: Path) -> list[TSApiCallInfo]:
     """Parse TypeScript file for API calls (fetch, axios, etc.)."""
-    source = file_path.read_text(encoding="utf-8")
+    try:
+        source = file_path.read_text(encoding="utf-8")
+    except (UnicodeDecodeError, OSError):
+        return []
     results: list[TSApiCallInfo] = []
 
     for match in _API_CALL_PATTERN.finditer(source):

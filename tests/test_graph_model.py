@@ -61,8 +61,18 @@ class TestContractGraph:
     def _make_graph(self) -> ContractGraph:
         g = ContractGraph()
         n1 = ContractNode(id="A", kind=NodeKind.PYDANTIC_MODEL, name="ModelA", file_path=Path("a.py"))
-        n2 = ContractNode(id="B", kind=NodeKind.TS_INTERFACE, name="InterfaceB", file_path=Path("b.ts"))
-        n3 = ContractNode(id="C", kind=NodeKind.TS_INTERFACE, name="InterfaceC", file_path=Path("c.ts"))
+        n2 = ContractNode(
+            id="B",
+            kind=NodeKind.TS_INTERFACE,
+            name="InterfaceB",
+            file_path=Path("b.ts"),
+        )
+        n3 = ContractNode(
+            id="C",
+            kind=NodeKind.TS_INTERFACE,
+            name="InterfaceC",
+            file_path=Path("c.ts"),
+        )
         g.add_node(n1)
         g.add_node(n2)
         g.add_node(n3)
@@ -128,17 +138,21 @@ class TestContractGraph:
         n2 = ContractNode(id="B", kind=NodeKind.TS_INTERFACE, name="B", file_path=Path("b.ts"))
         g.add_node(n1)
         g.add_node(n2)
-        g.add_edge(ContractEdge(
-            source="A",
-            target="B",
-            kind=EdgeKind.API_TYPE_SYNC,
-            mismatches=[FieldMismatch(
-                field_name="x",
-                provider_type="str",
-                consumer_type=None,
-                mismatch_kind=MismatchKind.MISSING_IN_CONSUMER,
-            )],
-        ))
+        g.add_edge(
+            ContractEdge(
+                source="A",
+                target="B",
+                kind=EdgeKind.API_TYPE_SYNC,
+                mismatches=[
+                    FieldMismatch(
+                        field_name="x",
+                        provider_type="str",
+                        consumer_type=None,
+                        mismatch_kind=MismatchKind.MISSING_IN_CONSUMER,
+                    )
+                ],
+            )
+        )
         findings = g.findings()
         assert len(findings) >= 1
 

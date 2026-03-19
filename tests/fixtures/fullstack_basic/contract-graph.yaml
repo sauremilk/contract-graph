@@ -1,0 +1,61 @@
+version: '1.0'
+include:
+- backend/**/*.py
+- dashboard/src/**/*.ts
+- dashboard/src/**/*.tsx
+- config/**/*.yaml
+exclude:
+- '**/node_modules/**'
+- '**/__pycache__/**'
+- '**/dist/**'
+- '**/build/**'
+discovery:
+  api_type_sync:
+    enabled: true
+    providers:
+    - path: backend/**/*.py
+      base_classes:
+      - BaseModel
+      - SQLModel
+    consumers:
+    - path: frontend/**/*.ts
+    field_naming:
+      provider: snake_case
+      consumer: camelCase
+    custom_mappings: []
+    type_compatibility:
+      str:
+      - string
+      int:
+      - number
+      float:
+      - number
+      bool:
+      - boolean
+      datetime:
+      - string
+      - Date
+      UUID:
+      - string
+  config_usage:
+    enabled: false
+  route_activation:
+    enabled: false
+policies:
+- name: no_missing_consumer_fields
+  enabled: true
+  severity: medium
+- name: no_type_incompatibility
+  enabled: true
+  severity: high
+- name: no_phantom_types
+  enabled: true
+  severity: medium
+scoring:
+  weights:
+    api_type_sync: 0.35
+    route_activation: 0.25
+    config_usage: 0.15
+    schema_evolution: 0.15
+    instruction_coherence: 0.1
+  severity_gate: high

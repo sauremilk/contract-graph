@@ -1,9 +1,9 @@
 """Pydantic models for API."""
 
-from pydantic import BaseModel
-from typing import Optional
 from datetime import datetime
 from uuid import UUID
+
+from pydantic import BaseModel
 
 
 class MatchResponse(BaseModel):
@@ -28,7 +28,7 @@ class PlayerStats(BaseModel):
     win_rate: float
     average_kills: float
     kd_ratio: float
-    last_played: Optional[datetime]
+    last_played: datetime | None
     rank: str
     level: int
 

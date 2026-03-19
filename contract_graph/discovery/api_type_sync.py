@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
@@ -18,11 +19,33 @@ from contract_graph.graph.model import (
     NodeKind,
     Severity,
 )
-from contract_graph.parsing.python_parser import PydanticModelInfo, parse_pydantic_models
-from contract_graph.parsing.typescript_parser import TSInterfaceInfo, parse_ts_interfaces
-
+from contract_graph.parsing.python_parser import (
+    PydanticModelInfo,
+    parse_pydantic_models,
+)
+from contract_graph.parsing.typescript_parser import (
+    TSInterfaceInfo,
+    parse_ts_interfaces,
+)
 
 # ── Type Compatibility ─────────────────────────────────────────────
+
+
+def _split_at_top_level_comma(s: str) -> tuple[str | None, str | None]:
+    """Split a string at the first comma that is not inside brackets.
+
+    Returns (left, right) or (None, None) if no top-level comma found.
+    """
+    depth = 0
+    for i, ch in enumerate(s):
+        if ch in ("[", "<", "("):
+            depth += 1
+        elif ch in ("]", ">", ")"):
+            depth -= 1
+        elif ch == "," and depth == 0:
+            return s[:i], s[i + 1 :]
+    return None, None
+
 
 # Python type → set of compatible TypeScript types
 _DEFAULT_TYPE_MAP: dict[str, set[str]] = {
@@ -66,10 +89,12 @@ def _normalize_python_type(type_str: str) -> tuple[str, bool]:
     if m:
         return f"list[{m.group(1).strip()}]", is_optional
 
-    # Handle dict[K, V]
-    m = re.match(r"dict\[(.+),\s*(.+)\]", s, re.IGNORECASE)
-    if m:
-        return f"dict[{m.group(1).strip()}, {m.group(2).strip()}]", is_optional
+    # Handle dict[K, V] — bracket-aware split for nested types
+    if s.lower().startswith("dict[") and s.endswith("]"):
+        inner = s[5:-1]  # strip "dict[" and "]"
+        key, val = _split_at_top_level_comma(inner)
+        if key is not None and val is not None:
+            return f"dict[{key.strip()}, {val.strip()}]", is_optional
 
     return s, is_optional
 
@@ -114,20 +139,22 @@ def _types_compatible(
         if arr_m:
             return _types_compatible(inner, arr_m.group(1), custom_map)
 
-    # dict[K, V] → Record<K, V>
-    dict_m = re.match(r"dict\[(.+),\s*(.+)\]", py_base, re.IGNORECASE)
-    if dict_m:
+    # dict[K, V] → Record<K, V> — bracket-aware
+    if py_base.lower().startswith("dict[") and py_base.endswith("]"):
+        inner = py_base[5:-1]
+        pk, pv = _split_at_top_level_comma(inner)
         rec_m = re.match(r"Record<(.+),\s*(.+)>", ts_base)
-        if rec_m:
-            return _types_compatible(dict_m.group(1), rec_m.group(1), custom_map) and _types_compatible(
-                dict_m.group(2), rec_m.group(2), custom_map
-            )
+        if pk is not None and pv is not None and rec_m:
+            tk, tv = _split_at_top_level_comma(rec_m.group(0)[7:-1])  # strip "Record<" and ">"
+            if tk is not None and tv is not None:
+                return _types_compatible(pk.strip(), tk.strip(), custom_map) and _types_compatible(
+                    pv.strip(), tv.strip(), custom_map
+                )
 
     # Check mapping table
     for py_key, ts_set in type_map.items():
-        if py_base.lower() == py_key.lower():
-            if ts_base.lower() in {t.lower() for t in ts_set}:
-                return True
+        if py_base.lower() == py_key.lower() and ts_base.lower() in {t.lower() for t in ts_set}:
+            return True
 
     return False
 
@@ -149,15 +176,11 @@ def _camel_to_snake(name: str) -> str:
 
 def _field_names_match(py_name: str, ts_name: str, naming: str = "auto") -> bool:
     """Check if a Python field name matches a TypeScript field name."""
-    if py_name == ts_name:
-        return True
-    if naming in ("auto", "snake_to_camel"):
-        if _snake_to_camel(py_name) == ts_name:
-            return True
-    if naming in ("auto", "camel_to_snake"):
-        if _camel_to_snake(ts_name) == py_name:
-            return True
-    return False
+    return (
+        py_name == ts_name
+        or (naming in ("auto", "snake_to_camel") and _snake_to_camel(py_name) == ts_name)
+        or (naming in ("auto", "camel_to_snake") and _camel_to_snake(ts_name) == py_name)
+    )
 
 
 def _model_names_match(
@@ -184,7 +207,16 @@ def _model_names_match(
         return True, 0.95
 
     # Common suffix patterns: UserResponse ↔ UserResponseDTO, UserOut ↔ User
-    suffixes_to_strip = ["DTO", "Out", "In", "Create", "Update", "Response", "Request", "Schema"]
+    suffixes_to_strip = [
+        "DTO",
+        "Out",
+        "In",
+        "Create",
+        "Update",
+        "Response",
+        "Request",
+        "Schema",
+    ]
     py_stripped = py_name
     ts_stripped = ts_name
     for suffix in suffixes_to_strip:
@@ -260,7 +292,7 @@ class ApiTypeSyncDiscoverer(BaseDiscoverer):
                     ts_interfaces.extend(parse_ts_interfaces(ts_file))
 
         # ── Create Nodes ──
-        py_node_map: dict[str, ContractNode] = {}
+        py_node_map: dict[str, list[ContractNode]] = defaultdict(list)
         for model in py_models:
             rel = model.file_path.relative_to(root_path).as_posix()
             node_id = f"{rel}::{model.name}"
@@ -274,9 +306,9 @@ class ApiTypeSyncDiscoverer(BaseDiscoverer):
                 line_end=model.line_end,
             )
             nodes.append(node)
-            py_node_map[model.name] = node
+            py_node_map[model.name].append(node)
 
-        ts_node_map: dict[str, ContractNode] = {}
+        ts_node_map: dict[str, list[ContractNode]] = defaultdict(list)
         for iface in ts_interfaces:
             rel = iface.file_path.relative_to(root_path).as_posix()
             kind = NodeKind.TS_INTERFACE if iface.kind == "interface" else NodeKind.TS_TYPE
@@ -291,33 +323,35 @@ class ApiTypeSyncDiscoverer(BaseDiscoverer):
                 line_end=iface.line_end,
             )
             nodes.append(node)
-            ts_node_map[iface.name] = node
+            ts_node_map[iface.name].append(node)
 
         # ── Match & Compare ──
-        for py_name, py_node in py_node_map.items():
-            for ts_name, ts_node in ts_node_map.items():
+        for py_name, py_nodes in py_node_map.items():
+            for ts_name, ts_nodes in ts_node_map.items():
                 matched, confidence = _model_names_match(py_name, ts_name, custom_mappings)
                 if not matched:
                     continue
 
-                mismatches = self._compare_fields(py_node, ts_node, naming_mode, custom_type_map)
-                total_fields = max(len(py_node.fields), len(ts_node.fields), 1)
-                matched_count = total_fields - len(mismatches)
-                coverage = matched_count / total_fields
+                for py_node in py_nodes:
+                    for ts_node in ts_nodes:
+                        mismatches = self._compare_fields(py_node, ts_node, naming_mode, custom_type_map)
+                        total_fields = max(len(py_node.fields), len(ts_node.fields), 1)
+                        matched_count = total_fields - len(mismatches)
+                        coverage = matched_count / total_fields
 
-                severity = self._compute_severity(mismatches)
+                        severity = self._compute_severity(mismatches)
 
-                edges.append(
-                    ContractEdge(
-                        source=py_node.id,
-                        target=ts_node.id,
-                        kind=EdgeKind.API_TYPE_SYNC,
-                        confidence=confidence,
-                        field_coverage=coverage,
-                        mismatches=mismatches,
-                        severity=severity,
-                    )
-                )
+                        edges.append(
+                            ContractEdge(
+                                source=py_node.id,
+                                target=ts_node.id,
+                                kind=EdgeKind.API_TYPE_SYNC,
+                                confidence=confidence,
+                                field_coverage=coverage,
+                                mismatches=mismatches,
+                                severity=severity,
+                            )
+                        )
 
         return nodes, edges
 

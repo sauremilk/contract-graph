@@ -73,9 +73,7 @@ def no_type_incompatibility(graph: ContractGraph, config: dict[str, Any]) -> lis
                         consumer_name=tgt.name if tgt else "",
                         field_name=mm.field_name,
                         mismatch_kind=mm.mismatch_kind.value,
-                        fix_suggestion=(
-                            f"Change consumer type from '{mm.consumer_type}' to a compatible type."
-                        ),
+                        fix_suggestion=(f"Change consumer type from '{mm.consumer_type}' to a compatible type."),
                     )
                 )
     return findings
@@ -103,8 +101,7 @@ def no_phantom_types(graph: ContractGraph, config: dict[str, Any]) -> list[Findi
                     severity=Severity.MEDIUM,
                     title=f"Phantom type: {node.name}",
                     description=(
-                        f"TypeScript type '{node.name}' in {node.file_path} "
-                        f"has no matching Pydantic model (provider)."
+                        f"TypeScript type '{node.name}' in {node.file_path} has no matching Pydantic model (provider)."
                     ),
                     consumer_file=str(node.file_path),
                     consumer_name=node.name,

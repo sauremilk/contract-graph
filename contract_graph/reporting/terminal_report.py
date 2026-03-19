@@ -58,7 +58,13 @@ def print_terminal_report(
 
     # Severity summary
     summary = Table(show_header=False, box=None, padding=(0, 2))
-    for sev in [Severity.CRITICAL, Severity.HIGH, Severity.MEDIUM, Severity.LOW, Severity.INFO]:
+    for sev in [
+        Severity.CRITICAL,
+        Severity.HIGH,
+        Severity.MEDIUM,
+        Severity.LOW,
+        Severity.INFO,
+    ]:
         count = score.findings_by_severity.get(sev.value, 0)
         if count > 0:
             icon = _SEVERITY_ICONS[sev]

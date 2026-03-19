@@ -6,12 +6,12 @@ import textwrap
 from pathlib import Path
 
 from contract_graph.parsing.python_parser import (
-    parse_pydantic_models,
     parse_fastapi_routes,
+    parse_pydantic_models,
 )
 from contract_graph.parsing.typescript_parser import (
-    parse_ts_interfaces,
     parse_ts_api_calls,
+    parse_ts_interfaces,
 )
 from contract_graph.parsing.yaml_parser import parse_yaml_config
 

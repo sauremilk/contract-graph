@@ -5,7 +5,6 @@ from __future__ import annotations
 from contract_graph.graph.model import Finding, Severity
 from contract_graph.scoring.scorer import ScoreResult
 
-
 _SEVERITY_EMOJI = {
     Severity.CRITICAL: "🔴",
     Severity.HIGH: "🟠",
@@ -26,8 +25,8 @@ def generate_markdown_report(
     lines.append("# Contract Graph Report\n")
 
     # Summary
-    grade = _score_grade(score.total_score)
-    lines.append(f"**Health Score:** {score.total_score:.0f}/100 ({grade})\n")
+    grade = _score_grade(score.overall_score)
+    lines.append(f"**Health Score:** {score.overall_score:.1%} ({grade})\n")
     lines.append(f"**Nodes:** {node_count} | **Edges:** {edge_count} | **Findings:** {len(findings)}\n")
 
     if not findings:
@@ -53,27 +52,28 @@ def generate_markdown_report(
         lines.append(f"### {i}. {emoji} {f.title}\n")
         lines.append(f"- **Severity:** {f.severity.value}")
         lines.append(f"- **Discoverer:** {f.discoverer}")
-        if f.file_path:
-            lines.append(f"- **File:** `{f.file_path}`")
+        location = ""
+        if f.provider_file and f.consumer_file:
+            location = f"{f.provider_file} -> {f.consumer_file}"
+        elif f.provider_file:
+            location = f.provider_file
+        elif f.consumer_file:
+            location = f.consumer_file
+        if location:
+            lines.append(f"- **Location:** `{location}`")
         if f.description:
             lines.append(f"- **Description:** {f.description}")
-        if f.mismatches:
-            lines.append("\n| Field | Mismatch | Provider | Consumer |")
-            lines.append("|-------|----------|----------|----------|")
-            for m in f.mismatches:
-                lines.append(
-                    f"| `{m.field_name}` | {m.kind.value} | "
-                    f"{m.provider_value or '-'} | {m.consumer_value or '-'} |"
-                )
+        if f.fix_suggestion:
+            lines.append(f"- **Fix:** {f.fix_suggestion}")
         lines.append("")
 
     # Score per discoverer
-    if score.per_discoverer:
+    if score.discoverer_scores:
         lines.append("\n## Scores by Discoverer\n")
         lines.append("| Discoverer | Score |")
         lines.append("|------------|-------|")
-        for disc, s in score.per_discoverer.items():
-            lines.append(f"| {disc} | {s:.0f}/100 |")
+        for disc, s in score.discoverer_scores.items():
+            lines.append(f"| {disc} | {s:.1%} |")
 
     return "\n".join(lines)
 
@@ -93,12 +93,13 @@ def write_markdown_report(
 
 
 def _score_grade(score: float) -> str:
-    if score >= 90:
+    """Convert a 0.0-1.0 score to a letter grade."""
+    if score >= 0.9:
         return "A"
-    if score >= 80:
+    if score >= 0.8:
         return "B"
-    if score >= 70:
+    if score >= 0.7:
         return "C"
-    if score >= 60:
+    if score >= 0.6:
         return "D"
     return "F"

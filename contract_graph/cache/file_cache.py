@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -19,7 +20,10 @@ class FileCache:
         self._dir.mkdir(parents=True, exist_ok=True)
 
     def _file_hash(self, file_path: Path) -> str:
-        content = file_path.read_bytes()
+        try:
+            content = file_path.read_bytes()
+        except OSError:
+            return "unreadable"
         return hashlib.sha256(content).hexdigest()[:16]
 
     def _cache_path(self, file_hash: str, category: str) -> Path:
@@ -39,10 +43,16 @@ class FileCache:
         return None
 
     def put(self, file_path: Path, category: str, data: Any) -> None:
-        """Store a result in the cache."""
+        """Store a result in the cache (atomic write via temp file)."""
         fhash = self._file_hash(file_path)
         cp = self._cache_path(fhash, category)
-        cp.write_text(json.dumps(data, default=str), encoding="utf-8")
+        try:
+            fd, tmp = tempfile.mkstemp(dir=str(self._dir), suffix=".tmp")
+            with open(fd, "w", encoding="utf-8") as f:
+                json.dump(data, f, default=str)
+            Path(tmp).replace(cp)
+        except OSError:
+            pass  # cache write failure is non-fatal
 
     def clear(self) -> int:
         """Remove all cached files. Returns count of removed files."""

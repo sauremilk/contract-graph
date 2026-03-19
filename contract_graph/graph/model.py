@@ -10,7 +10,6 @@ from typing import Any
 
 import networkx as nx
 
-
 # ── Node & Edge Kinds ──────────────────────────────────────────────
 
 
@@ -110,7 +109,7 @@ class ContractEdge:
     source: str  # Node ID (provider)
     target: str  # Node ID (consumer)
     kind: EdgeKind
-    confidence: float = 1.0  # 0.0–1.0
+    confidence: float = 1.0  # 0.0-1.0
     field_coverage: float = 0.0  # Fraction of matched fields
     mismatches: list[FieldMismatch] = field(default_factory=list)
     severity: Severity = Severity.INFO
@@ -230,9 +229,7 @@ class ContractGraph:
                         discoverer=edge.kind.value,
                         severity=edge.severity,
                         title=f"{mm.mismatch_kind.value}: {mm.field_name}",
-                        description=(
-                            f"Provider type '{mm.provider_type}' vs consumer type '{mm.consumer_type}'"
-                        ),
+                        description=(f"Provider type '{mm.provider_type}' vs consumer type '{mm.consumer_type}'"),
                         provider_file=str(src.file_path) if src else "",
                         provider_name=src.name if src else edge.source,
                         provider_line=src.line_start if src else 0,

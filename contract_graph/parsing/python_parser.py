@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import ast
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
 from contract_graph.graph.model import FieldInfo
-
 
 # ── Data Structures ────────────────────────────────────────────────
 
@@ -82,7 +82,7 @@ def _resolve_annotation(node: ast.expr) -> str:
 def _is_optional(annotation_str: str) -> bool:
     """Check if an annotation string represents an optional type."""
     lowered = annotation_str.lower()
-    return "optional" in lowered or "none" in lowered
+    return "optional[" in lowered or re.search(r"\bnone\b", lowered) is not None
 
 
 class _PydanticVisitor(ast.NodeVisitor):
@@ -93,9 +93,13 @@ class _PydanticVisitor(ast.NodeVisitor):
         self.target_bases = target_bases
         self.models: list[PydanticModelInfo] = []
 
-    def visit_ClassDef(self, node: ast.ClassDef) -> None:  # noqa: N802
+    def visit_ClassDef(self, node: ast.ClassDef) -> None:
         base_names = [_resolve_annotation(b) for b in node.bases]
-        if not any(b in self.target_bases for b in base_names):
+        # Support dotted names like pydantic.BaseModel → check last component too
+        base_last_parts = [b.rsplit(".", 1)[-1] for b in base_names]
+        if not any(
+            b in self.target_bases or lp in self.target_bases for b, lp in zip(base_names, base_last_parts, strict=True)
+        ):
             self.generic_visit(node)
             return
 
@@ -138,11 +142,11 @@ class _RouteVisitor(ast.NodeVisitor):
         self.file_path = file_path
         self.routes: list[FastAPIRouteInfo] = []
 
-    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:  # noqa: N802
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
         self._check_decorators(node)
         self.generic_visit(node)
 
-    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:  # noqa: N802
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
         self._check_decorators(node)
         self.generic_visit(node)
 
@@ -189,7 +193,7 @@ class _ConfigReaderVisitor(ast.NodeVisitor):
         self.file_path = file_path
         self.reads: list[ConfigReaderInfo] = []
 
-    def visit_Subscript(self, node: ast.Subscript) -> None:  # noqa: N802
+    def visit_Subscript(self, node: ast.Subscript) -> None:
         # config["key"] or config['key']
         if isinstance(node.slice, ast.Constant) and isinstance(node.slice.value, str):
             self.reads.append(
@@ -202,18 +206,23 @@ class _ConfigReaderVisitor(ast.NodeVisitor):
             )
         self.generic_visit(node)
 
-    def visit_Call(self, node: ast.Call) -> None:  # noqa: N802
+    def visit_Call(self, node: ast.Call) -> None:
         # config.get("key") or settings.get("key")
-        if isinstance(node.func, ast.Attribute) and node.func.attr == "get":
-            if node.args and isinstance(node.args[0], ast.Constant) and isinstance(node.args[0].value, str):
-                self.reads.append(
-                    ConfigReaderInfo(
-                        key=node.args[0].value,
-                        file_path=self.file_path,
-                        line=node.lineno,
-                        access_pattern="get",
-                    )
+        if (
+            isinstance(node.func, ast.Attribute)
+            and node.func.attr == "get"
+            and node.args
+            and isinstance(node.args[0], ast.Constant)
+            and isinstance(node.args[0].value, str)
+        ):
+            self.reads.append(
+                ConfigReaderInfo(
+                    key=node.args[0].value,
+                    file_path=self.file_path,
+                    line=node.lineno,
+                    access_pattern="get",
                 )
+            )
         self.generic_visit(node)
 
 
@@ -231,7 +240,10 @@ def parse_python_file(
 
     Returns a dict with keys: 'models', 'routes', 'config_reads'.
     """
-    source = file_path.read_text(encoding="utf-8")
+    try:
+        source = file_path.read_text(encoding="utf-8")
+    except (UnicodeDecodeError, OSError):
+        return {"models": [], "routes": [], "config_reads": []}
     try:
         tree = ast.parse(source, filename=str(file_path))
     except SyntaxError:
@@ -260,9 +272,12 @@ def parse_python_file(
 
 def parse_pydantic_models(file_path: Path, custom_bases: frozenset[str] | None = None) -> list[PydanticModelInfo]:
     """Convenience: extract only Pydantic models from a file."""
-    return parse_python_file(file_path, extract_routes=False, extract_config_reads=False, custom_bases=custom_bases)[
-        "models"
-    ]
+    return parse_python_file(
+        file_path,
+        extract_routes=False,
+        extract_config_reads=False,
+        custom_bases=custom_bases,
+    )["models"]
 
 
 def parse_fastapi_routes(file_path: Path) -> list[FastAPIRouteInfo]:

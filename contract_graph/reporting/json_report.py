@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -21,7 +21,7 @@ def generate_json_report(
     """Generate a structured JSON report."""
     return {
         "version": "1.0",
-        "analyzed_at": datetime.now(timezone.utc).isoformat(),
+        "analyzed_at": datetime.now(UTC).isoformat(),
         "repo_path": repo_path,
         "duration_seconds": round(duration, 2),
         "summary": {
