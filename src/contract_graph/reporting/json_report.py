@@ -7,7 +7,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from contract_graph.graph.model import ContractGraph, Finding
+from contract_graph import __version__
+from contract_graph.graph.model import ContractGraph, Finding, Severity
 from contract_graph.scoring.scorer import ScoreResult
 
 
@@ -18,20 +19,44 @@ def generate_json_report(
     repo_path: str = ".",
     duration: float = 0.0,
 ) -> dict[str, Any]:
-    """Generate a structured JSON report."""
+    """Generate a structured JSON report conforming to output_schema.json."""
+    # Count findings by severity
+    by_severity: dict[str, int] = {s.value: 0 for s in Severity}
+    for f in findings:
+        by_severity[f.severity.value] += 1
+
     return {
-        "version": "1.0",
-        "analyzed_at": datetime.now(UTC).isoformat(),
-        "repo_path": repo_path,
-        "duration_seconds": round(duration, 2),
-        "summary": {
-            "total_nodes": graph.node_count,
-            "total_edges": graph.edge_count,
-            **score.to_dict(),
-        },
-        **graph.to_dict(),
+        "tool": "contract-graph",
+        "version": __version__,
         "findings": [f.to_dict() for f in findings],
+        "summary": {
+            "total_findings": len(findings),
+            "by_severity": by_severity,
+            "score": {
+                "overall": score.overall_score,
+                "grade": _score_grade(score.overall_score),
+            },
+            "analyzed_at": datetime.now(UTC).isoformat(),
+            "duration_seconds": round(duration, 2),
+        },
+        "contract_graph": {
+            "nodes": graph.node_count,
+            "edges": graph.edge_count,
+        },
     }
+
+
+def _score_grade(score: float) -> str:
+    """Convert a 0.0-1.0 score to a letter grade."""
+    if score >= 0.9:
+        return "A"
+    if score >= 0.8:
+        return "B"
+    if score >= 0.7:
+        return "C"
+    if score >= 0.6:
+        return "D"
+    return "F"
 
 
 def write_json_report(report: dict[str, Any], output_path: Path | str) -> None:

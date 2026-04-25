@@ -43,10 +43,18 @@ Detected mismatch families:
 ## Integration with drift
 
 `contract-graph` and `drift` are complementary:
-- `contract-graph` focuses on static cross-boundary contract drift.
+- `contract-graph` focuses on static cross-boundary contract drift (v1: Pydantic ↔ TypeScript).
 - `drift` can consume structured findings for broader reliability workflows.
 
-Use `contract_graph/output_schema.json` as stable integration contract between tools.
+**CLI Integration:**
+```bash
+contract-graph analyze --format json | drift ingest
+```
+
+For complete integration guide, see [docs/drift-integration.md](docs/drift-integration.md).
+
+**Stable Output Contract:**
+All JSON output conforms to [`src/contract_graph/output_schema.json`](src/contract_graph/output_schema.json), ensuring reliable downstream tooling integration.
 
 ## Development
 
