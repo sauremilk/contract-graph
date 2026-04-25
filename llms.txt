@@ -1,0 +1,32 @@
+contract-graph
+
+Purpose:
+- Static analysis tool for cross-boundary contract drift between backend and frontend code.
+- Primary focus: Python (Pydantic/FastAPI) providers vs TypeScript consumers.
+
+Inputs:
+- Repository source files.
+- Optional YAML config (`contract-graph.yaml`).
+
+Core pipeline:
+1. Parse source artifacts into typed entities.
+2. Discover provider-consumer relationships.
+3. Compare fields and compatibility constraints.
+4. Evaluate policy rules into findings.
+5. Produce score and reports (terminal/JSON/Markdown).
+
+Output contract:
+- Top-level report fields: `tool`, `version`, `findings`, `summary`.
+- Extended tool-specific metadata under `contract_graph`.
+- JSON schema: `src/contract_graph/output_schema.json`.
+
+CLI:
+- `contract-graph analyze`
+- `contract-graph check --fail-on <severity>`
+- `contract-graph impact <path>`
+- `contract-graph init --preset <name>`
+
+Engineering posture:
+- Deterministic, local-first analysis.
+- No network dependency required for core checks.
+- CI-ready exit codes for policy enforcement.

@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/sauremilk/contract-graph/blob/master/src/contract_graph/output_schema.json",
+  "title": "contract-graph output schema",
+  "type": "object",
+  "required": ["tool", "version", "findings", "summary"],
+  "properties": {
+    "tool": {
+      "type": "string",
+      "const": "contract-graph"
+    },
+    "version": {
+      "type": "string"
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["discoverer", "severity", "title"],
+        "properties": {
+          "discoverer": { "type": "string" },
+          "severity": {
+            "type": "string",
+            "enum": ["critical", "high", "medium", "low", "info"]
+          },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "provider_file": { "type": "string" },
+          "provider_name": { "type": "string" },
+          "provider_line": { "type": "integer", "minimum": 0 },
+          "consumer_file": { "type": "string" },
+          "consumer_name": { "type": "string" },
+          "consumer_line": { "type": "integer", "minimum": 0 },
+          "field_name": { "type": "string" },
+          "mismatch_kind": { "type": "string" },
+          "fix_suggestion": { "type": "string" },
+          "contract_graph": {
+            "type": "object",
+            "properties": {
+              "edge_kind": { "type": "string" },
+              "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+              "field_coverage": { "type": "number", "minimum": 0, "maximum": 1 }
+            },
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": ["total_findings", "by_severity", "score"],
+      "properties": {
+        "total_findings": { "type": "integer", "minimum": 0 },
+        "by_severity": {
+          "type": "object",
+          "properties": {
+            "critical": { "type": "integer", "minimum": 0 },
+            "high": { "type": "integer", "minimum": 0 },
+            "medium": { "type": "integer", "minimum": 0 },
+            "low": { "type": "integer", "minimum": 0 },
+            "info": { "type": "integer", "minimum": 0 }
+          },
+          "additionalProperties": false
+        },
+        "score": {
+          "type": "object",
+          "properties": {
+            "overall": { "type": "number", "minimum": 0, "maximum": 1 },
+            "grade": { "type": "string" }
+          },
+          "required": ["overall"],
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "contract_graph": {
+      "type": "object",
+      "properties": {
+        "nodes": { "type": "integer", "minimum": 0 },
+        "edges": { "type": "integer", "minimum": 0 },
+        "discoverers": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "config_path": { "type": "string" }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}
