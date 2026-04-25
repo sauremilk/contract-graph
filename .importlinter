@@ -12,3 +12,10 @@ layers =
     contract_graph.scoring
     contract_graph.reporting
     contract_graph.cache
+
+[importlinter:contract:parsing-no-policy-dependency]
+name = Parsing module must not import from policy or scoring
+type = independence
+modules =
+    contract_graph.parsing
+forbidden = contract_graph.policy|contract_graph.scoring

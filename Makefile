@@ -1,6 +1,6 @@
 UV ?= uv
 
-.PHONY: install lint type-check test test-cov build clean pre-commit
+.PHONY: install lint type-check test test-cov build clean pre-commit-install pre-commit-run
 
 install:
 	$(UV) sync --extra dev
@@ -23,5 +23,8 @@ build:
 clean:
 	$(UV) run python -c "import shutil, pathlib; [shutil.rmtree(p, ignore_errors=True) for p in ('.mypy_cache','.pytest_cache','.ruff_cache','dist','build')]; [f.unlink() for f in pathlib.Path('.').glob('.coverage*') if f.is_file()]"
 
-pre-commit:
+pre-commit-install:
+	$(UV) tool run pre-commit install
+
+pre-commit-run:
 	$(UV) tool run pre-commit run --all-files
