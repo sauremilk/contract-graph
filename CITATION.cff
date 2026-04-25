@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use contract-graph in academic work, please cite it as follows."
+title: "contract-graph"
+version: "0.1.0"
+date-released: "2026-04-25"
+license: "MIT"
+authors:
+  - family-names: "sauremilk"
+repository-code: "https://github.com/sauremilk/contract-graph"
+url: "https://github.com/sauremilk/contract-graph"
