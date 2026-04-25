@@ -68,13 +68,39 @@ def main() -> None:
 )
 @click.option("--output", "output_path", default=None, help="Output file path (for JSON)")
 @click.option("--root", default=".", help="Project root directory")
-def analyze(config_path: str | None, fmt: str, output_path: str | None, root: str) -> None:
+@click.option(
+    "--enable-discoverers",
+    multiple=True,
+    help="Enable specific discoverers (e.g. --enable-discoverers config_usage --enable-discoverers route_activation)",
+)
+def analyze(
+    config_path: str | None, fmt: str, output_path: str | None, root: str, enable_discoverers: tuple[str, ...]
+) -> None:
     """Run full contract analysis."""
     try:
         config = load_config(config_path)
     except ConfigError as exc:
         click.echo(f"\u274c Config error: {exc}", err=True)
         sys.exit(2)
+
+    # Override discoverer enablement if CLI flags provided
+    if enable_discoverers:
+        # Disable all discoverers first
+        config.discovery.api_type_sync.enabled = False
+        config.discovery.config_usage.enabled = False
+        config.discovery.route_activation.enabled = False
+
+        # Enable specified ones
+        for disc_name in enable_discoverers:
+            if disc_name == "api_type_sync":
+                config.discovery.api_type_sync.enabled = True
+            elif disc_name == "config_usage":
+                config.discovery.config_usage.enabled = True
+            elif disc_name == "route_activation":
+                config.discovery.route_activation.enabled = True
+            else:
+                click.echo(f"⚠️  Unknown discoverer: {disc_name}", err=True)
+
     graph, duration = _run_analysis(config, root)
 
     # Evaluate policies

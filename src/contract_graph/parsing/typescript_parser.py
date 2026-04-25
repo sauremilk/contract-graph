@@ -55,6 +55,24 @@ _TYPE_PATTERN = re.compile(
     re.MULTILINE,
 )
 
+# Matches utility types: Partial<T>, Omit<T, K>, Pick<T, K>, Record<K, T>, etc.
+_UTILITY_TYPE_PATTERN = re.compile(
+    r"(?:export\s+)?type\s+(\w+)(?:\s*<[^>]*>)?\s*=\s*(Partial|Omit|Pick|Record|Readonly|Required|Exclude|Extract|NonNullable|ReturnType|InstanceType|Awaited)\s*<([^>]+)>",
+    re.MULTILINE | re.IGNORECASE,
+)
+
+# Matches conditional types: T extends U ? A : B
+_CONDITIONAL_TYPE_PATTERN = re.compile(
+    r"(?:export\s+)?type\s+(\w+)(?:\s*<[^>]*>)?\s*=\s*([^;]+\s+extends\s+[^;]+\s+\?\s+[^;]+\s+:\s+[^;]+);",
+    re.MULTILINE,
+)
+
+# Matches mapped types: { [K in keyof T]: V }
+_MAPPED_TYPE_PATTERN = re.compile(
+    r"(?:export\s+)?type\s+(\w+)(?:\s*<[^>]*>)?\s*=\s*\{\s*\[(\w+)\s+in\s+keyof\s+(\w+)\]",
+    re.MULTILINE,
+)
+
 # Matches a single field line: fieldName: Type; or fieldName?: Type;
 _FIELD_PATTERN = re.compile(
     r"^\s*(?:readonly\s+)?(\w+)(\?)?:\s*(.+?);?\s*$",
@@ -115,13 +133,108 @@ def _count_newlines(text: str, end: int) -> int:
 
 
 def parse_ts_interfaces(file_path: Path) -> list[TSInterfaceInfo]:
-    """Parse TypeScript file for interface and type definitions."""
+    """Parse TypeScript file for interface and type definitions.
+
+    Recognizes:
+    - Standard interfaces: interface Foo { ... }
+    - Type aliases: type Foo = { ... }
+    - Utility types: type PartialUser = Partial<User>
+    - Conditional types: type T = Condition ? TrueType : FalseType
+    - Mapped types: type Readonly<T> = { readonly [K in keyof T]: T[K] }
+    """
     try:
         source = file_path.read_text(encoding="utf-8")
     except (UnicodeDecodeError, OSError) as exc:
         logger.warning("Skipping %s: %s", file_path, exc)
         return []
     results: list[TSInterfaceInfo] = []
+
+    # Parse utility types (simplified representation)
+    for match in _UTILITY_TYPE_PATTERN.finditer(source):
+        name = match.group(1)
+        utility = match.group(2)
+        target = match.group(3)
+
+        line_start = _count_newlines(source, match.start())
+        line_end = line_start + 1
+
+        # Utility types are represented as synthetic fields
+        fields = {
+            "★utility_type": FieldInfo(
+                name="★utility_type",
+                type_str=f"{utility}<{target}>",
+                is_optional=False,
+            )
+        }
+
+        results.append(
+            TSInterfaceInfo(
+                name=name,
+                file_path=file_path,
+                fields=fields,
+                kind="type",
+                line_start=line_start,
+                line_end=line_end,
+                extends=[target],  # Treat utility type target as "extends"
+            )
+        )
+
+    # Parse conditional types (simplified representation)
+    for match in _CONDITIONAL_TYPE_PATTERN.finditer(source):
+        name = match.group(1)
+        condition_expr = match.group(2)
+
+        line_start = _count_newlines(source, match.start())
+        line_end = line_start + 1
+
+        fields = {
+            "★conditional": FieldInfo(
+                name="★conditional",
+                type_str="conditional",
+                is_optional=False,
+            )
+        }
+
+        results.append(
+            TSInterfaceInfo(
+                name=name,
+                file_path=file_path,
+                fields=fields,
+                kind="type",
+                line_start=line_start,
+                line_end=line_end,
+                extends=[],
+            )
+        )
+
+    # Parse mapped types (simplified representation)
+    for match in _MAPPED_TYPE_PATTERN.finditer(source):
+        name = match.group(1)
+        key_var = match.group(2)
+        target_type = match.group(3)
+
+        line_start = _count_newlines(source, match.start())
+        line_end = line_start + 1
+
+        fields = {
+            "★mapped": FieldInfo(
+                name="★mapped",
+                type_str=f"mapped [${key_var} in keyof {target_type}]",
+                is_optional=False,
+            )
+        }
+
+        results.append(
+            TSInterfaceInfo(
+                name=name,
+                file_path=file_path,
+                fields=fields,
+                kind="type",
+                line_start=line_start,
+                line_end=line_end,
+                extends=[target_type],
+            )
+        )
 
     # Parse interfaces
     for match in _INTERFACE_PATTERN.finditer(source):
