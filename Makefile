@@ -15,7 +15,7 @@ test:
 	$(UV) run pytest tests -q
 
 test-cov:
-	$(UV) run pytest tests --cov=contract_graph --cov-report=term-missing
+	$(UV) run pytest tests --cov=contract_graph --cov-report=term-missing --cov-report=xml
 
 build:
 	$(UV) build
