@@ -56,7 +56,7 @@ Repository = "https://github.com/mick-gsk/contract-graph"
 Issues = "https://github.com/mick-gsk/contract-graph/issues"
 Discussions = "https://github.com/mick-gsk/contract-graph/discussions"
 Documentation = "https://github.com/mick-gsk/contract-graph#readme"
-Changelog = "https://github.com/mick-gsk/contract-graph/blob/main/CHANGELOG.md"
+Changelog = "https://github.com/mick-gsk/contract-graph/blob/master/CHANGELOG.md"
 CI = "https://github.com/mick-gsk/contract-graph/actions"
 
 [tool.ruff]
@@ -110,7 +110,7 @@ paths = ["src/contract_graph", "tests"]
 exclude = ["tests/fixtures/"]
 
 [tool.semantic_release]
-branch = "main"
+branch = "master"
 version_toml = ["pyproject.toml:project.version"]
 version_variables = ["src/contract_graph/__init__.py:__version__"]
 build_command = "uv build"

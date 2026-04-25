@@ -25,6 +25,7 @@ clean:
 
 pre-commit-install:
 	$(UV) tool run pre-commit install
+	$(UV) tool run pre-commit install --hook-type pre-push
 
 pre-commit-run:
 	$(UV) tool run pre-commit run --all-files

@@ -9,7 +9,7 @@
 ## Before Opening an Issue
 
 1. Check existing issues and discussions.
-2. Reproduce with latest `main`.
+2. Reproduce with latest `master`.
 3. Provide command, config, and minimal fixture.
 4. Include Python version and OS details.
 

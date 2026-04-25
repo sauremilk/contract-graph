@@ -7,6 +7,7 @@ Thanks for contributing.
 ```bash
 uv sync --extra dev
 uv run pre-commit install
+uv run pre-commit install --hook-type pre-push
 ```
 
 Run the local quality gates before opening a PR:

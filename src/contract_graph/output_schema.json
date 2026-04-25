@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/mick-gsk/contract-graph/blob/main/src/contract_graph/output_schema.json",
+  "$id": "https://github.com/mick-gsk/contract-graph/blob/master/src/contract_graph/output_schema.json",
   "title": "contract-graph output schema",
   "type": "object",
   "required": ["tool", "version", "findings", "summary"],
