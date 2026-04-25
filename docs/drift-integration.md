@@ -9,7 +9,7 @@
 
 ## Integration Architecture
 
-```
+```text
 contract-graph analyze --format json
         ↓
     JSON Report
@@ -52,6 +52,7 @@ The JSON output from `contract-graph analyze --format json` conforms to the cano
 **Location:** `src/contract_graph/output_schema.json`
 
 **Top-level structure:**
+
 ```json
 {
   "tool": "contract-graph",
@@ -116,6 +117,7 @@ When drift consumes contract-graph findings, these fields are critical:
 As of v1, `contract-graph` remains a **standalone CLI tool**, not a drift subcommand.
 
 **Rationale:**
+
 - contract-graph can be used independently for local contract analysis
 - Pipe model (`... | drift ingest`) enables flexible composition and future tool chains
 - Decouples contract-graph release cycle from drift
@@ -144,12 +146,14 @@ fi
 
 All JSON output is validated against the canonical schema on every run.
 Tests verify:
+
 - Required top-level fields (`tool`, `version`, `findings`, `summary`)
 - Required `summary` fields (`total_findings`, `by_severity`, `score`)
 - Finding object structure (severity, title, provider/consumer fields)
 - Severity enum values (critical, high, medium, low, info)
 
 Run validation tests:
+
 ```bash
 pytest tests/test_schema_validation.py -v
 ```
@@ -157,13 +161,15 @@ pytest tests/test_schema_validation.py -v
 ## Troubleshooting
 
 ### "tool" field missing from output
+
 → Upgrade to latest contract-graph version (v1.1.0+) where schema conformance is enforced.
 
 ### Findings not appearing in drift dashboard
+
 → Verify `drift ingest` is installed and in PATH: `which drift`
 → Check drift ingestion logs for parse errors
 
 ### CI gate passing but no findings piped to drift
+
 → This is expected: no findings = gate passes = nothing to ingest
 → To force ingestion of empty report: modify CI script to unconditionally pipe `analyze` after `check`
-

@@ -18,17 +18,19 @@ As of 25 April 2026, the following modules have been audited for v1 readiness:
 ## v1 Scope (Locked — Phase 1)
 
 **In Scope:**
+
 - Parse Pydantic models from Python and TypeScript interfaces from `.ts` files
 - Discover contracts via `api_type_sync`: match Python models → TypeScript interfaces
 - Detect 3 core mismatch families:
   1. Missing field in consumer
-  2. Type incompatibility 
+  2. Type incompatibility
   3. Optionality mismatch
 - Policy engine converts mismatches to findings with severity levels
 - Terminal and JSON report output (JSON must be schema-conformant)
 - CI gating: `contract-graph check --fail-on high`
 
 **Out of Scope (v1):**
+
 - Additional discoverers enabled by default: `config_usage`, `route_activation` (Phase 2 proof-of-concept, disabled by default)
 - OpenAPI-aware correlation
 - SARIF output format
@@ -39,12 +41,14 @@ As of 25 April 2026, the following modules have been audited for v1 readiness:
 ## v2 Target (Phase 2 & Beyond)
 
 **Completed (Phase 2):**
+
 - ✅ Route activation discoverer (proof-of-concept, disabled by default)
 - ✅ Config usage discoverer (proof-of-concept, disabled by default)
 - ✅ Enhanced TypeScript syntax support (utility types, conditional types, mapped types)
 - ✅ CLI flag `--enable-discoverers` for dynamic activation
 
 **Remaining:**
+
 - OpenAPI contract extraction
 - SARIF profile for enterprise CI
 - Incremental graph mode for large codebases

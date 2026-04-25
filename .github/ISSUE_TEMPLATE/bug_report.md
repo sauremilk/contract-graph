@@ -12,7 +12,7 @@ assignees: []
 
 ## Steps to reproduce
 
-```
+```bash
 # Minimal reproduction — ideally a single contract-graph analyze invocation
 contract-graph analyze --config <path>
 ```

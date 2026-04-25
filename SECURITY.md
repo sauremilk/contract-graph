@@ -17,6 +17,7 @@ Please report suspected vulnerabilities privately.
 ## Scope
 
 Security reports are welcome for:
+
 - Arbitrary code execution paths.
 - Unsafe file handling.
 - Secret leakage through logs or reports.

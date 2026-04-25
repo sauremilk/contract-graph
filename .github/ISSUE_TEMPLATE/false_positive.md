@@ -16,22 +16,26 @@ assignees: []
 Provide the smallest possible source files that demonstrate the issue.
 
 **Backend (Python/Pydantic):**
+
 ```python
 # paste relevant model / route snippet
 ```
 
 **Frontend (TypeScript):**
+
 ```typescript
 // paste relevant interface / type snippet
 ```
 
 **Config (`contract-graph.yaml`):**
+
 ```yaml
 # paste relevant config
 ```
 
 **Finding produced (or missing):**
-```
+
+```json
 # paste the JSON finding or describe what was expected
 ```
 

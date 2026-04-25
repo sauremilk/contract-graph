@@ -19,6 +19,7 @@ uv run contract-graph check --fail-on high
 ```
 
 Expected behavior:
+
 - Exit code `0`: no findings above threshold.
 - Exit code `1`: findings matched the configured fail threshold.
 - Exit code `2`: configuration or runtime input error.
@@ -34,6 +35,7 @@ Expected behavior:
 5. Report: output terminal, JSON, or Markdown reports.
 
 Detected mismatch families:
+
 - Missing field in consumer.
 - Missing field in provider.
 - Type incompatibility.
@@ -43,10 +45,12 @@ Detected mismatch families:
 ## Integration with drift
 
 `contract-graph` and `drift` are complementary:
+
 - `contract-graph` focuses on static cross-boundary contract drift (v1: Pydantic ↔ TypeScript).
 - `drift` can consume structured findings for broader reliability workflows.
 
 **CLI Integration:**
+
 ```bash
 contract-graph analyze --format json | drift ingest
 ```
@@ -67,6 +71,7 @@ make test-cov
 ```
 
 Additional docs:
+
 - [CONTRIBUTING.md](CONTRIBUTING.md)
 - [DEVELOPER.md](DEVELOPER.md)
 - [docs/MAINTAINER_RUNBOOK.md](docs/MAINTAINER_RUNBOOK.md)

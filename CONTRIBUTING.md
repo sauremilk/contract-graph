@@ -23,6 +23,7 @@ make test
 This repository uses Conventional Commits.
 
 Allowed prefixes:
+
 - `feat:`
 - `fix:`
 - `docs:`
@@ -30,6 +31,7 @@ Allowed prefixes:
 - `ci:`
 
 Examples:
+
 - `feat: add api type sync matcher for alias fields`
 - `fix: prevent false optionality mismatch on union types`
 - `docs: clarify output schema compatibility guarantees`
@@ -51,6 +53,7 @@ Examples:
 ## Reporting Bugs
 
 Open an issue with:
+
 - Reproduction steps.
 - Expected vs actual behavior.
 - Sample files or reduced fixture if possible.
