@@ -1,4 +1,13 @@
 repos:
+  - repo: local
+    hooks:
+      - id: drift-pre-push
+        name: drift pre-push ingest
+        entry: uv run python scripts/drift_pre_push.py
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.12.4
     hooks:

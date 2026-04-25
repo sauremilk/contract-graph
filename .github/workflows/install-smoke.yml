@@ -1,0 +1,35 @@
+name: Install Smoke Test
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"   # every Monday 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: Install from source — Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: astral-sh/setup-uv@v5
+      - name: Build and install package
+        run: |
+          uv build
+          uv pip install dist/contract_graph-*.whl
+      - name: CLI smoke test
+        run: |
+          contract-graph --version
+          contract-graph --help
+      - name: Analyze fixture
+        run: |
+          contract-graph analyze --config tests/fixtures/fullstack_basic/contract-graph.yaml

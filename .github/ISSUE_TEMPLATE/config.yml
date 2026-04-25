@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question / Discussion
+    url: https://github.com/sauremilk/contract-graph/discussions
+    about: Ask usage questions or share ideas in Discussions.
+  - name: Security Vulnerability
+    url: https://github.com/sauremilk/contract-graph/blob/master/SECURITY.md
+    about: Please report security issues via the process described in SECURITY.md.
