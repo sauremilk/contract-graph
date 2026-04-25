@@ -102,7 +102,10 @@ class ContractGraphAdapter:
         if sub.exit_code == 127 or sub.timed_out:
             return IntegrationResult(
                 source=self.name,
-                summary=f"contract-graph: invocation failed (exit {sub.exit_code}, timed_out={sub.timed_out}).",
+                summary=(
+                    f"contract-graph: invocation failed "
+                    f"(exit {sub.exit_code}, timed_out={sub.timed_out})."
+                ),
                 raw_output=sub.stderr,
             )
 

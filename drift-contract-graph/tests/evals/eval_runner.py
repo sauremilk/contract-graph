@@ -50,7 +50,9 @@ def _synthetic_report(case: dict) -> dict:
                 "finding_id": f"CG-eval{len(findings):06d}",
                 "discoverer": "api_type_sync",
                 "severity": "high",
-                "title": f"Field {exp.get('field_name', '?')} drift ({exp.get('mismatch_kind', '?')})",
+                "title": (
+                    f"Field {exp.get('field_name', '?')} drift ({exp.get('mismatch_kind', '?')})"
+                ),
                 "description": "Synthetic eval finding.",
                 "provider_file": inp.get("provider_file", ""),
                 "provider_name": inp.get("provider_name", ""),
@@ -136,7 +138,8 @@ def main() -> None:
     print(f"Recall    : {results['recall']:.1%}  (min {MIN_RECALL:.0%})")
     print(f"FP Rate   : {results['fp_rate']:.1%}")
     print(
-        f"TP/FP/FN  : {results['tp']}/{results['fp']}/{results['fn']}  ({results['total_cases']} cases)"
+        f"TP/FP/FN  : {results['tp']}/{results['fp']}/{results['fn']}  "
+        f"({results['total_cases']} cases)"
     )
 
     if args.baseline:
