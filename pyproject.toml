@@ -7,7 +7,7 @@ packages = ["src/contract_graph"]
 
 [project]
 name = "contract-graph"
-version = "0.1.0"
+version = "1.0.0"
 description = "Cross-boundary contract intelligence for heterogeneous codebases"
 readme = "README.md"
 license = "MIT"
