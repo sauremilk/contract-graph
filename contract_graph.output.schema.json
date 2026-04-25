@@ -1,0 +1,186 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "contract-graph Output Schema",
+  "description": "JSON schema for contract-graph analysis reports. Designed for compatibility with drift and other downstream analysis tools.",
+  "type": "object",
+  "required": ["tool", "version", "findings", "summary"],
+  "properties": {
+    "tool": {
+      "type": "string",
+      "const": "contract-graph",
+      "description": "Tool identifier"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+",
+      "description": "Tool version following semver"
+    },
+    "findings": {
+      "type": "array",
+      "description": "List of discovered contract mismatches",
+      "items": {
+        "$ref": "#/definitions/finding"
+      }
+    },
+    "summary": {
+      "type": "object",
+      "description": "Aggregated analysis results",
+      "required": ["health_score", "total_nodes", "total_edges", "finding_counts"],
+      "properties": {
+        "health_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Overall contract health percentage"
+        },
+        "total_nodes": {
+          "type": "integer",
+          "description": "Total contract graph nodes"
+        },
+        "total_edges": {
+          "type": "integer",
+          "description": "Total contract graph edges"
+        },
+        "finding_counts": {
+          "type": "object",
+          "properties": {
+            "high": { "type": "integer", "default": 0 },
+            "medium": { "type": "integer", "default": 0 },
+            "low": { "type": "integer", "default": 0 }
+          }
+        },
+        "analysis_time_ms": {
+          "type": "number",
+          "description": "Total analysis duration in milliseconds"
+        }
+      }
+    },
+    "contract_graph": {
+      "type": "object",
+      "description": "Tool-specific metadata",
+      "properties": {
+        "graph_nodes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/node"
+          }
+        },
+        "graph_edges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/edge"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "finding": {
+      "type": "object",
+      "required": ["id", "severity", "category", "message"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique finding identifier"
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["high", "medium", "low"],
+          "description": "Finding severity level"
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "missing_field_in_consumer",
+            "missing_field_in_provider",
+            "type_incompatibility",
+            "optionality_mismatch",
+            "phantom_type",
+            "route_not_activated",
+            "config_mismatch"
+          ],
+          "description": "Type of contract mismatch detected"
+        },
+        "message": {
+          "type": "string",
+          "description": "Human-readable problem description"
+        },
+        "provider": {
+          "type": "object",
+          "properties": {
+            "path": { "type": "string" },
+            "line": { "type": "integer" },
+            "type": { "type": "string" }
+          },
+          "description": "Provider artifact details"
+        },
+        "consumer": {
+          "type": "object",
+          "properties": {
+            "path": { "type": "string" },
+            "line": { "type": "integer" },
+            "type": { "type": "string" }
+          },
+          "description": "Consumer artifact details"
+        }
+      }
+    },
+    "node": {
+      "type": "object",
+      "required": ["id", "type", "path"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique node identifier in graph"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "pydantic_model",
+            "fastapi_route",
+            "typescript_interface",
+            "typescript_type",
+            "api_consumer",
+            "config_reader"
+          ],
+          "description": "Node type in contract graph"
+        },
+        "path": {
+          "type": "string",
+          "description": "Source file path"
+        },
+        "line": {
+          "type": "integer",
+          "description": "Source line number"
+        },
+        "name": {
+          "type": "string",
+          "description": "Artifact name (e.g., ClassName, interface name)"
+        }
+      }
+    },
+    "edge": {
+      "type": "object",
+      "required": ["source", "target", "type"],
+      "properties": {
+        "source": {
+          "type": "string",
+          "description": "Source node ID"
+        },
+        "target": {
+          "type": "string",
+          "description": "Target node ID"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["provider_consumer", "dependency", "field_mapping"],
+          "description": "Edge semantics"
+        },
+        "metadata": {
+          "type": "object",
+          "description": "Additional edge context"
+        }
+      }
+    }
+  }
+}
