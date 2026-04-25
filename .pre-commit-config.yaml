@@ -10,7 +10,8 @@ repos:
     rev: v1.18.2
     hooks:
       - id: mypy
-        args: ["--config-file=pyproject.toml", "src/contract_graph"]
+        args: ["--config-file=pyproject.toml", "--no-incremental"]
+        files: ^src/
 
   - repo: https://github.com/crate-ci/typos
     rev: v1.37.1

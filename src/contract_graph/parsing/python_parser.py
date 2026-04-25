@@ -143,7 +143,7 @@ class _PydanticVisitor(ast.NodeVisitor):
                 )
 
             # Handle @computed_field decorated properties
-            if isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            if isinstance(stmt, ast.FunctionDef | ast.AsyncFunctionDef):
                 for dec in stmt.decorator_list:
                     dec_name = ""
                     if isinstance(dec, ast.Name):
