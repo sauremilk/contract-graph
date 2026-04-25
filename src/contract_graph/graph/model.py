@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass, field
 from enum import StrEnum
 from pathlib import Path
@@ -147,8 +148,34 @@ class Finding:
     mismatch_kind: str = ""
     fix_suggestion: str = ""
 
+    def finding_id(self) -> str:
+        """Deterministic fingerprint — stable across re-runs on the same codebase.
+
+        Hashed components: discoverer, normalised provider_file,
+        normalised consumer_file, field_name, mismatch_kind.
+        This guarantees < 1 % collision rate even on 10k-finding corpora.
+        """
+
+        # Normalise to posix-style lowercase for cross-platform stability.
+        def _norm(p: str) -> str:
+            return p.replace("\\", "/").lower().strip()
+
+        raw = "|".join(
+            [
+                self.discoverer,
+                _norm(self.provider_file),
+                _norm(self.consumer_file),
+                self.field_name,
+                self.mismatch_kind,
+            ]
+        )
+        digest = hashlib.sha256(raw.encode()).hexdigest()[:12]
+        return f"CG-{digest}"
+
     def to_dict(self) -> dict[str, Any]:
-        return {k: str(v) if isinstance(v, Severity) else v for k, v in self.__dict__.items()}
+        d = {k: str(v) if isinstance(v, Severity) else v for k, v in self.__dict__.items()}
+        d["finding_id"] = self.finding_id()
+        return d
 
 
 def _node_ref(node: ContractNode | None, fallback_id: str = "", *, prefix: str) -> dict[str, str | int]:

@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from contract_graph import __version__
+from contract_graph import SCHEMA_VERSION, __version__
 from contract_graph.graph.model import ContractGraph, Finding, Severity
 from contract_graph.scoring.scorer import ScoreResult
 
@@ -28,6 +28,7 @@ def generate_json_report(
     return {
         "tool": "contract-graph",
         "version": __version__,
+        "schema_version": SCHEMA_VERSION,
         "findings": [f.to_dict() for f in findings],
         "summary": {
             "total_findings": len(findings),

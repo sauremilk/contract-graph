@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "drift-contract-graph"
+version = "0.1.0"
+description = "drift integration adapter for contract-graph — exposes cross-boundary contract findings as native drift Findings"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+authors = [{ name = "Mick Gottschalk" }]
+keywords = ["drift", "contract-graph", "static-analysis", "developer-tooling"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Quality Assurance",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "contract-graph>=1.1.1",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-cov", "pyright", "ruff"]
+
+# ── drift plugin entry-points ──────────────────────────────────────────────
+# drift discovers this adapter via the "drift.integrations" group.
+# drift discovers the "contracts" subcommand via the "drift.commands" group.
+[project.entry-points."drift.integrations"]
+contract-graph = "drift_contract_graph.adapter:ContractGraphAdapter"
+
+[project.entry-points."drift.commands"]
+contracts = "drift_contract_graph.commands:contracts_command"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pyright]
+pythonVersion = "3.11"
+typeCheckingMode = "strict"

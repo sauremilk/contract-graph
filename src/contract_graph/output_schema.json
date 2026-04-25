@@ -3,7 +3,7 @@
   "$id": "https://github.com/mick-gsk/contract-graph/blob/master/src/contract_graph/output_schema.json",
   "title": "contract-graph output schema",
   "type": "object",
-  "required": ["tool", "version", "findings", "summary"],
+  "required": ["tool", "version", "schema_version", "findings", "summary"],
   "properties": {
     "tool": {
       "type": "string",
@@ -12,12 +12,22 @@
     "version": {
       "type": "string"
     },
+    "schema_version": {
+      "type": "string",
+      "description": "Semantic version of the output schema. Major: breaking changes. Minor: additive.",
+      "pattern": "^\\d+\\.\\d+$"
+    },
     "findings": {
       "type": "array",
       "items": {
         "type": "object",
         "required": ["discoverer", "severity", "title"],
         "properties": {
+          "finding_id": {
+            "type": "string",
+            "description": "Deterministic fingerprint (CG-<sha256[:12]>). Stable across re-runs on unchanged code.",
+            "pattern": "^CG-[0-9a-f]{12}$"
+          },
           "discoverer": { "type": "string" },
           "severity": {
             "type": "string",

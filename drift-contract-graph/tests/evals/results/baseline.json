@@ -1,0 +1,9 @@
+{
+  "precision": 1.0,
+  "recall": 1.0,
+  "fp_rate": 0.0,
+  "tp": 7,
+  "fp": 0,
+  "fn": 0,
+  "total_cases": 8
+}

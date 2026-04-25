@@ -7,45 +7,65 @@
 - **contract-graph**: Detects static cross-boundary contract drift (Pydantic ↔ TypeScript type mismatches)
 - **drift**: Broader reliability tracking, including contract findings, deployment signals, and system health
 
-## Integration Architecture
+## Integration Options
 
-```text
-contract-graph analyze --format json
-        ↓
-    JSON Report
-        ↓
-  drift ingest
-        ↓
-  Unified Dashboard
-```
+### Option A — Native adapter (recommended)
 
-## CLI Integration
-
-### Standalone Analysis
+Install the `drift-contract-graph` adapter package (in `drift-contract-graph/`).
+drift will auto-discover it via the `drift.integrations` entry-point and run it
+as part of every `drift analyze` invocation.
 
 ```bash
-contract-graph analyze --format json
+pip install drift-contract-graph
+drift analyze   # contract-graph findings appear as native drift Findings
 ```
 
-Output is printed to stdout as structured JSON conforming to [`output_schema.json`](../src/contract_graph/output_schema.json).
+The adapter also registers the `drift contracts` CLI subcommand:
 
-### Pipe to drift
+```bash
+drift contracts analyze .           # full analysis, terminal output
+drift contracts check --fail-on high  # CI gate
+drift contracts show-mapping .      # inspect the drift Finding representation
+```
+
+### Option B — Pipe-based (no adapter required)
 
 ```bash
 contract-graph analyze --format json | drift ingest
 ```
 
-This pipes the JSON report directly to `drift ingest`, which ingests findings into its unified workspace.
-
-### CI Gate + Pipe
+### Option C — CI Gate + Pipe
 
 ```bash
 contract-graph check --fail-on high && contract-graph analyze --format json | drift ingest
 ```
 
-Checks pass (exit 0), then pipes findings to drift for visibility and trending.
+## Integration Architecture (Option A)
 
-## Output Schema Contract
+```text
+drift analyze
+  └─ IntegrationRunner.run_all()
+       └─ ContractGraphAdapter.run(ctx)
+            └─ subprocess: contract-graph analyze {repo_path} --format json
+                 └─ JSON stdout
+                      └─ map_findings() → list[drift.models.Finding]
+```
+
+**Finding mapping:**
+
+| drift.models.Finding field | Source |
+|---|---|
+| `signal_type` | `"contract_graph_drift"` |
+| `severity` | `finding.severity` (same enum values) |
+| `score` | severity-derived (critical=1.0 … info=0.0) |
+| `title` | `finding.title` |
+| `description` | `finding.description` |
+| `file_path` | `consumer_file` (primary violation location) |
+| `fix` | `finding.fix_suggestion` |
+| `root_cause` | `finding.mismatch_kind` |
+| `metadata["contract_graph"]` | Full contract-graph payload + `finding_id` |
+
+## Output Schema Contract (schema_version 1.1)
 
 The JSON output from `contract-graph analyze --format json` conforms to the canonical schema:
 
@@ -57,8 +77,10 @@ The JSON output from `contract-graph analyze --format json` conforms to the cano
 {
   "tool": "contract-graph",
   "version": "1.x.y",
+  "schema_version": "1.1",
   "findings": [
     {
+      "finding_id": "CG-e8276e8efe7b",
       "discoverer": "api_type_sync",
       "severity": "high|medium|low|critical|info",
       "title": "...",
@@ -76,47 +98,28 @@ The JSON output from `contract-graph analyze --format json` conforms to the cano
   ],
   "summary": {
     "total_findings": 0,
-    "by_severity": {
-      "critical": 0,
-      "high": 0,
-      "medium": 0,
-      "low": 0,
-      "info": 0
-    },
-    "score": {
-      "overall": 0.85,
-      "grade": "B"
-    },
+    "by_severity": { "critical": 0, "high": 0, "medium": 0, "low": 0, "info": 0 },
+    "score": { "overall": 0.85, "grade": "B" },
     "analyzed_at": "2026-04-25T...",
     "duration_seconds": 0.42
   },
-  "contract_graph": {
-    "nodes": 10,
-    "edges": 5
-  }
+  "contract_graph": { "nodes": 10, "edges": 5 }
 }
 ```
 
-## Field Semantics for drift Ingestion
+### Schema versioning policy
 
-When drift consumes contract-graph findings, these fields are critical:
+`schema_version` follows `MAJOR.MINOR` semantics:
 
-| Field | Semantics | drift Use |
-|-------|-----------|-----------|
-| `severity` | Finding severity (high → critical, medium → warning) | Gate decisions, priority ranking |
-| `title` | Human-readable problem title | Dashboard display, issue title |
-| `description` | Detailed explanation | Issue body, root cause tracking |
-| `provider_file` | Backend file path (Python) | Change tracking, blame |
-| `consumer_file` | Frontend file path (TypeScript) | Change impact, scope |
-| `field_name` | Contract field that drifted | Regression tracking |
-| `mismatch_kind` | Drift category | Reporting, filtering |
-| `fix_suggestion` | Recommended fix action | Remediation guidance |
+- **Minor bump** (e.g. `1.1 → 1.2`): additive new fields; downstream consumers must handle unknown fields gracefully (`additionalProperties: true`).
+- **Major bump** (e.g. `1.x → 2.0`): breaking — field removals or renames. Announced in CHANGELOG with migration guide.
 
-## Architecture Decision: Standalone CLI
+### `finding_id` stability guarantee
 
-As of v1, `contract-graph` remains a **standalone CLI tool**, not a drift subcommand.
+`finding_id` (`CG-<sha256[:12]>`) is computed from `discoverer + provider_file + consumer_file + field_name + mismatch_kind`.
+It is **stable across re-runs on unchanged code**, enabling drift-level deduplication and trending.
 
-**Rationale:**
+
 
 - contract-graph can be used independently for local contract analysis
 - Pipe model (`... | drift ingest`) enables flexible composition and future tool chains

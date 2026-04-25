@@ -34,3 +34,6 @@ Thumbs.db
 # Reports (generated)
 contract-report.json
 contract-report.md
+
+# drift cache
+.drift-cache/

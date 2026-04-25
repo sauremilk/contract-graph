@@ -3,7 +3,7 @@
   "title": "contract-graph Output Schema",
   "description": "JSON schema for contract-graph analysis reports. Designed for compatibility with drift and other downstream analysis tools.",
   "type": "object",
-  "required": ["tool", "version", "findings", "summary"],
+  "required": ["tool", "version", "schema_version", "findings", "summary"],
   "properties": {
     "tool": {
       "type": "string",
@@ -14,6 +14,11 @@
       "type": "string",
       "pattern": "^\\d+\\.\\d+\\.\\d+",
       "description": "Tool version following semver"
+    },
+    "schema_version": {
+      "type": "string",
+      "description": "Semantic version of the output schema. Major: breaking. Minor: additive.",
+      "pattern": "^\\d+\\.\\d+$"
     },
     "findings": {
       "type": "array",
