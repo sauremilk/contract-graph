@@ -51,12 +51,12 @@ all = ["contract-graph[typescript,sarif,dev]"]
 contract-graph = "contract_graph.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/sauremilk/contract-graph"
-Repository = "https://github.com/sauremilk/contract-graph"
-Issues = "https://github.com/sauremilk/contract-graph/issues"
-Discussions = "https://github.com/sauremilk/contract-graph/discussions"
-Documentation = "https://github.com/sauremilk/contract-graph#readme"
-Changelog = "https://github.com/sauremilk/contract-graph/blob/master/CHANGELOG.md"
+Homepage = "https://github.com/mick-gsk/contract-graph"
+Repository = "https://github.com/mick-gsk/contract-graph"
+Issues = "https://github.com/mick-gsk/contract-graph/issues"
+Discussions = "https://github.com/mick-gsk/contract-graph/discussions"
+Documentation = "https://github.com/mick-gsk/contract-graph#readme"
+Changelog = "https://github.com/mick-gsk/contract-graph/blob/main/CHANGELOG.md"
 
 [tool.ruff]
 line-length = 120

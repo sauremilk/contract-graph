@@ -1,7 +1,7 @@
 # contract-graph
 
-[![CI](https://github.com/sauremilk/contract-graph/actions/workflows/ci.yml/badge.svg)](https://github.com/sauremilk/contract-graph/actions/workflows/ci.yml)
-[![Coverage](https://codecov.io/gh/sauremilk/contract-graph/branch/main/graph/badge.svg)](https://codecov.io/gh/sauremilk/contract-graph)
+[![CI](https://github.com/mick-gsk/contract-graph/actions/workflows/ci.yml/badge.svg)](https://github.com/mick-gsk/contract-graph/actions/workflows/ci.yml)
+[![Coverage](https://codecov.io/gh/mick-gsk/contract-graph/branch/main/graph/badge.svg)](https://codecov.io/gh/mick-gsk/contract-graph)
 ![PyPI Ready](https://img.shields.io/badge/pypi-ready-blue)
 
 Cross-boundary contract intelligence for fullstack codebases.
