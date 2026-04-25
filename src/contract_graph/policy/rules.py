@@ -11,7 +11,6 @@ from contract_graph.graph.model import (
     Finding,
     MismatchKind,
     Severity,
-    _node_ref,
 )
 from contract_graph.policy.engine import register_rule
 
@@ -36,8 +35,12 @@ def _build_finding(
         severity=severity,
         title=title,
         description=description,
-        **_node_ref(src, src_id, prefix="provider"),
-        **_node_ref(tgt, tgt_id, prefix="consumer"),
+        provider_file=str(src.file_path) if src else "",
+        provider_name=src.name if src else src_id,
+        provider_line=src.line_start if src else 0,
+        consumer_file=str(tgt.file_path) if tgt else "",
+        consumer_name=tgt.name if tgt else tgt_id,
+        consumer_line=tgt.line_start if tgt else 0,
         field_name=field_name,
         mismatch_kind=mismatch_kind,
         fix_suggestion=fix_suggestion,

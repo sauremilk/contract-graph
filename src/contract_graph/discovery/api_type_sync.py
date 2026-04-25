@@ -9,8 +9,6 @@ from pathlib import Path
 from typing import Any
 
 from contract_graph.discovery.base import BaseDiscoverer, DiscovererRegistry
-
-logger = logging.getLogger(__name__)
 from contract_graph.graph.model import (
     ContractEdge,
     ContractGraph,
@@ -30,6 +28,8 @@ from contract_graph.parsing.typescript_parser import (
     TSInterfaceInfo,
     parse_ts_interfaces,
 )
+
+logger = logging.getLogger(__name__)
 
 # ── Type Compatibility ─────────────────────────────────────────────
 
@@ -378,12 +378,12 @@ class ApiTypeSyncDiscoverer(BaseDiscoverer):
 
         # Map consumer fields by potential provider names
         consumer_by_provider_name: dict[str, FieldInfo] = {}
-        for ts_name, ts_field in consumer.fields.items():
-            consumer_by_provider_name[ts_name] = ts_field
+        for ts_name, consumer_field in consumer.fields.items():
+            consumer_by_provider_name[ts_name] = consumer_field
             # Also index by snake_case equivalent
             snake = _camel_to_snake(ts_name)
             if snake != ts_name:
-                consumer_by_provider_name[snake] = ts_field
+                consumer_by_provider_name[snake] = consumer_field
 
         for py_name, py_field in provider.fields.items():
             # Find matching consumer field

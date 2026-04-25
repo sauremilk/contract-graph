@@ -5,15 +5,12 @@ from __future__ import annotations
 import json
 import sys
 import time
+from importlib import import_module
 from pathlib import Path
 
 import click
 import yaml
 
-# Importing these packages triggers their __init__, which auto-registers built-in
-# discoverers and policy rules via the @DiscovererRegistry.register / @register_rule decorators.
-import contract_graph.discovery  # noqa: F401
-import contract_graph.policy  # noqa: F401
 from contract_graph.config import ConfigError, ContractGraphConfig, generate_default_config, load_config
 from contract_graph.discovery.base import DiscovererRegistry
 from contract_graph.graph.builder import GraphBuilder
@@ -23,6 +20,11 @@ from contract_graph.policy.engine import PolicyEngine
 from contract_graph.reporting.json_report import generate_json_report, write_json_report
 from contract_graph.reporting.terminal_report import print_terminal_report
 from contract_graph.scoring.scorer import score_findings
+
+# Importing these packages triggers their __init__, which auto-registers built-in
+# discoverers and policy rules via the @DiscovererRegistry.register / @register_rule decorators.
+import_module("contract_graph.discovery")
+import_module("contract_graph.policy")
 
 
 def _run_analysis(config: ContractGraphConfig, root: str) -> tuple[ContractGraph, float]:

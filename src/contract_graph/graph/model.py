@@ -151,7 +151,7 @@ class Finding:
         return {k: str(v) if isinstance(v, Severity) else v for k, v in self.__dict__.items()}
 
 
-def _node_ref(node: ContractNode | None, fallback_id: str = "", *, prefix: str) -> dict[str, object]:
+def _node_ref(node: ContractNode | None, fallback_id: str = "", *, prefix: str) -> dict[str, str | int]:
     """Return Finding kwargs for a provider or consumer node.
 
     prefix must be "provider" or "consumer". The returned dict is intended
@@ -253,8 +253,12 @@ class ContractGraph:
                         severity=edge.severity,
                         title=f"{mm.mismatch_kind.value}: {mm.field_name}",
                         description=(f"Provider type '{mm.provider_type}' vs consumer type '{mm.consumer_type}'"),
-                        **_node_ref(src, edge.source, prefix="provider"),
-                        **_node_ref(tgt, edge.target, prefix="consumer"),
+                        provider_file=str(src.file_path) if src else "",
+                        provider_name=src.name if src else edge.source,
+                        provider_line=src.line_start if src else 0,
+                        consumer_file=str(tgt.file_path) if tgt else "",
+                        consumer_name=tgt.name if tgt else edge.target,
+                        consumer_line=tgt.line_start if tgt else 0,
                         field_name=mm.field_name,
                         mismatch_kind=mm.mismatch_kind.value,
                     )

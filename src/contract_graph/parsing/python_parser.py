@@ -7,6 +7,7 @@ import logging
 import re
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from contract_graph.graph.model import FieldInfo
 
@@ -283,7 +284,7 @@ def parse_python_file(
     extract_routes: bool = True,
     extract_config_reads: bool = True,
     custom_bases: frozenset[str] | None = None,
-) -> dict[str, list]:
+) -> dict[str, list[Any]]:
     """Parse a Python file and extract Pydantic models, routes, and config reads.
 
     Returns a dict with keys: 'models', 'routes', 'config_reads'.
@@ -292,14 +293,14 @@ def parse_python_file(
         source = file_path.read_text(encoding="utf-8")
     except (UnicodeDecodeError, OSError) as exc:
         logger.warning("Skipping %s: %s", file_path, exc)
-        return {"models": [], "routes": [], "config_reads": [], "skipped": str(file_path)}
+        return {"models": [], "routes": [], "config_reads": [], "skipped": [str(file_path)]}
     try:
         tree = ast.parse(source, filename=str(file_path))
     except SyntaxError as exc:
         logger.warning("Skipping %s: SyntaxError at line %s", file_path, exc.lineno)
-        return {"models": [], "routes": [], "config_reads": [], "skipped": str(file_path)}
+        return {"models": [], "routes": [], "config_reads": [], "skipped": [str(file_path)]}
 
-    result: dict[str, list] = {"models": [], "routes": [], "config_reads": []}
+    result: dict[str, list[Any]] = {"models": [], "routes": [], "config_reads": []}
     bases = custom_bases if custom_bases else _PYDANTIC_BASES
 
     if extract_models:

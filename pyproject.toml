@@ -61,9 +61,16 @@ Changelog = "https://github.com/sauremilk/contract-graph/blob/master/CHANGELOG.m
 [tool.ruff]
 line-length = 120
 target-version = "py311"
+extend-exclude = ["tests/fixtures"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/conftest.py" = ["RUF100"]
+"tests/test_api_type_sync.py" = ["RUF059"]
+"tests/test_policy_engine.py" = ["RUF059"]
+"tests/test_regression_demo.py" = ["F401"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -80,6 +87,10 @@ warn_return_any = true
 strict_optional = true
 check_untyped_defs = true
 exclude = ["tests/fixtures/"]
+
+[[tool.mypy.overrides]]
+module = ["yaml", "networkx"]
+ignore_missing_imports = true
 
 [tool.coverage.run]
 source = ["contract_graph"]

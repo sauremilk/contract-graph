@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+from importlib import import_module
 from pathlib import Path
 from typing import Any
 
 import pytest
 
-import contract_graph.discovery  # noqa: F401 — registers built-in discoverers
-import contract_graph.policy  # noqa: F401 — registers built-in rules
+import_module("contract_graph.discovery")  # registers built-in discoverers
+import_module("contract_graph.policy")  # registers built-in rules
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 FULLSTACK_BASIC = FIXTURES_DIR / "fullstack_basic"

@@ -43,12 +43,12 @@ def generate_markdown_report(
     for sev in Severity:
         count = severity_counts.get(sev, 0)
         if count > 0:
-            lines.append(f"| {SEVERITY_EMOJI.get(sev, '')} {sev.value.upper()} | {count} |")
+            lines.append(f"| {_SEVERITY_EMOJI.get(sev, '')} {sev.value.upper()} | {count} |")
 
     # Findings detail
     lines.append("\n## Findings\n")
     for i, f in enumerate(findings, 1):
-        emoji = SEVERITY_EMOJI.get(f.severity, "")
+        emoji = _SEVERITY_EMOJI.get(f.severity, "")
         lines.append(f"### {i}. {emoji} {f.title}\n")
         lines.append(f"- **Severity:** {f.severity.value}")
         lines.append(f"- **Discoverer:** {f.discoverer}")

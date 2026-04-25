@@ -1,0 +1,14 @@
+[importlinter]
+root_package = contract_graph
+
+[importlinter:contract:submodules-must-be-layered]
+name = No cyclic imports between core submodules
+type = layers
+layers =
+    contract_graph.parsing
+    contract_graph.discovery
+    contract_graph.graph
+    contract_graph.policy
+    contract_graph.scoring
+    contract_graph.reporting
+    contract_graph.cache
