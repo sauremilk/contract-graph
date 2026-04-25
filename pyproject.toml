@@ -2,6 +2,9 @@
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.hatch.build.targets.wheel]
+packages = ["src/contract_graph"]
+
 [project]
 name = "contract-graph"
 version = "0.1.0"
@@ -31,7 +34,17 @@ dependencies = [
 [project.optional-dependencies]
 typescript = ["tree-sitter>=0.22", "tree-sitter-typescript>=0.22"]
 sarif = ["sarif-om>=1.0"]
-dev = ["pytest>=8.0", "pytest-cov", "ruff", "pyright"]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov",
+    "pytest-xdist",
+    "pytest-timeout",
+    "ruff>=0.4",
+    "mypy>=1.10",
+    "vulture>=2.11",
+    "python-semantic-release>=9.0",
+    "jsonschema>=4.0",
+]
 all = ["contract-graph[typescript,sarif,dev]"]
 
 [project.scripts]
@@ -40,6 +53,10 @@ contract-graph = "contract_graph.cli:main"
 [project.urls]
 Homepage = "https://github.com/sauremilk/contract-graph"
 Repository = "https://github.com/sauremilk/contract-graph"
+Issues = "https://github.com/sauremilk/contract-graph/issues"
+Discussions = "https://github.com/sauremilk/contract-graph/discussions"
+Documentation = "https://github.com/sauremilk/contract-graph#readme"
+Changelog = "https://github.com/sauremilk/contract-graph/blob/master/CHANGELOG.md"
 
 [tool.ruff]
 line-length = 120
@@ -50,8 +67,41 @@ select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["."]
+pythonpath = ["src"]
 
-[tool.pyright]
-pythonVersion = "3.11"
-typeCheckingMode = "basic"
+[tool.mypy]
+python_version = "3.11"
+pretty = true
+show_error_codes = true
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_return_any = true
+strict_optional = true
+check_untyped_defs = true
+exclude = ["tests/fixtures/"]
+
+[tool.coverage.run]
+source = ["contract_graph"]
+branch = true
+parallel = true
+
+[tool.coverage.report]
+skip_empty = true
+show_missing = true
+fail_under = 60
+
+[tool.vulture]
+min_confidence = 80
+paths = ["src/contract_graph", "tests"]
+exclude = ["tests/fixtures/"]
+
+[tool.semantic_release]
+branch = "main"
+version_toml = ["pyproject.toml:project.version"]
+version_variables = ["src/contract_graph/__init__.py:__version__"]
+build_command = "uv build"
+commit_message = "chore(release): {version}"
+changelog_file = "CHANGELOG.md"
+upload_to_pypi = false
+upload_to_release = true
